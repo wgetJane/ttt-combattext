@@ -16,164 +16,157 @@ local dingaling_lasthit_volume = 0.75
 local dingaling_lasthit_pitchmaxdmg = 50
 local dingaling_lasthit_pitchmindmg = 100
 
-do
-	local cl_cvars = {}
-
-	local function updatefont()
-		local fontdata = {
-			font = combattext_font,
-			size = 26 * combattext_scale,
-			outline = combattext_outline,
-			antialias = combattext_antialias,
-		}
-		surface.CreateFont("ttt_combattext_font", fontdata)
-		fontdata.size = fontdata.size * 4 / 3
-		surface.CreateFont("ttt_combattext_font_headshot", fontdata)
-	end
-
-	for k, v in pairs({
-	ttt_combattext = {
-		1, "Display damage numbers",
-		function(name, old, new)
-			combattext = cl_cvars[name]:GetBool()
-			net.Start("ttt_combattext_changecvar")
-			net.SendToServer()
-		end,
-		{FCVAR_ARCHIVE, FCVAR_USERINFO}
-	},
-	ttt_combattext_batching_window = {
-		0.3, "Maximum delay between damage events in order to batch numbers, set to 0 to disable",
-		function(name, old, new)
-			combattext_batching_window = cl_cvars[name]:GetFloat()
-		end
-	},
-	ttt_combattext_font = {
-		"Arial", "Font face used for damage numbers",
-		function(name, old, new)
-			combattext_font = cl_cvars[name]:GetString()
-			updatefont()
-		end
-	},
-	ttt_combattext_color = {
-		"ffff00", "Color of damage numbers in hex format: RRGGBBAA",
-		function(name, old, new)
-			local rgba = {0, 0, 0, 255}
-			local i = 0
-
-			cl_cvars[name]:GetString():gsub("%x%x", function(x)
-				i = i + 1
-				rgba[i] = tonumber(x, 16)
-			end, 4)
-
-			combattext_color = Color(rgba[1], rgba[2], rgba[3], rgba[4])
-		end
-	},
-	ttt_combattext_scale = {
-		1.0, "Size of damage numbers",
-		function(name, old, new)
-			combattext_scale = cl_cvars[name]:GetFloat()
-			updatefont()
-		end
-	},
-	ttt_combattext_outline = {
-		1, "Draw damage numbers with outlines",
-		function(name, old, new)
-			combattext_outline = cl_cvars[name]:GetBool()
-			updatefont()
-		end
-	},
-	ttt_combattext_antialias = {
-		0, "Draw damage numbers with smooth text",
-		function(name, old, new)
-			combattext_antialias = cl_cvars[name]:GetBool()
-			updatefont()
-		end
-	},
-	ttt_dingaling = {
-		0, "Play a sound whenever you damage an enemy",
-		function(name, old, new)
-			dingaling = cl_cvars[name]:GetBool()
-			net.Start("ttt_combattext_changecvar")
-			net.SendToServer()
-		end,
-		{FCVAR_ARCHIVE, FCVAR_USERINFO}
-	},
-	ttt_dingaling_file = {
-		"ttt_combattext/hitsound.ogg", "The sound file to play on hit",
-		function(name, old, new)
-			dingaling_file = cl_cvars[name]:GetString()
-		end
-	},
-	ttt_dingaling_volume = {
-		0.75, "Desired volume of the hit sound",
-		function(name, old, new)
-			dingaling_volume = cl_cvars[name]:GetFloat()
-		end
-	},
-	ttt_dingaling_pitchmaxdmg = {
-		50, "Desired pitch of the hit sound when a maximum damage hit (150 damage) is done",
-		function(name, old, new)
-			dingaling_pitchmaxdmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
-		end
-	},
-	ttt_dingaling_pitchmindmg = {
-		100, "Desired pitch of the hit sound when a minimal damage hit (0 damage) is done",
-		function(name, old, new)
-			dingaling_pitchmindmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
-		end
-	},
-	ttt_dingaling_lasthit = {
-		0, "Play a sound whenever you kill an enemy",
-		function(name, old, new)
-			dingaling_lasthit = cl_cvars[name]:GetBool()
-			net.Start("ttt_combattext_changecvar")
-			net.SendToServer()
-		end,
-		{FCVAR_ARCHIVE, FCVAR_USERINFO}
-	},
-	ttt_dingaling_lasthit_file = {
-		"ttt_combattext/killsound.ogg", "The sound file to play on kill",
-		function(name, old, new)
-			dingaling_lasthit_file = cl_cvars[name]:GetString()
-		end
-	},
-	ttt_dingaling_lasthit_volume = {
-		0.75, "Desired volume of the last hit sound",
-		function(name, old, new)
-			dingaling_lasthit_volume = cl_cvars[name]:GetFloat()
-		end
-	},
-	ttt_dingaling_lasthit_pitchmaxdmg = {
-		50, "Desired pitch of the last hit sound when a maximum damage hit (150 damage) is done",
-		function(name, old, new)
-			dingaling_lasthit_pitchmaxdmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
-		end
-	},
-	ttt_dingaling_lasthit_pitchmindmg = {
-		100, "Desired pitch of the last hit sound when a minimal damage hit (0 damage) is done",
-		function(name, old, new)
-			dingaling_lasthit_pitchmindmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
-		end
-	},
-	}) do
-		cl_cvars[k] = CreateConVar(k, v[1], v[4] or FCVAR_ARCHIVE, v[2])
-		v[3](k)
-		cvars.AddChangeCallback(k, v[3])
-	end
+local cl_cvars = {}
+local function updatefont()
+	local fontdata = {
+		font = combattext_font,
+		size = 26 * combattext_scale,
+		outline = combattext_outline,
+		antialias = combattext_antialias,
+	}
+	surface.CreateFont("ttt_combattext_font", fontdata)
+	fontdata.size = fontdata.size * 4 / 3
+	surface.CreateFont("ttt_combattext_font_headshot", fontdata)
 end
+for k, v in pairs({
+ttt_combattext = {
+	1, "Display damage numbers",
+	function(name, old, new)
+		combattext = cl_cvars[name]:GetBool()
+		net.Start("ttt_combattext_changecvar")
+		net.SendToServer()
+	end,
+	{FCVAR_ARCHIVE, FCVAR_USERINFO}
+},
+ttt_combattext_batching_window = {
+	0.3, "Maximum delay between damage events in order to batch numbers, set to 0 to disable",
+	function(name, old, new)
+		combattext_batching_window = cl_cvars[name]:GetFloat()
+	end
+},
+ttt_combattext_font = {
+	"Arial", "Font face used for damage numbers",
+	function(name, old, new)
+		combattext_font = cl_cvars[name]:GetString()
+		updatefont()
+	end
+},
+ttt_combattext_color = {
+	"ffff00", "Color of damage numbers in hex format: RRGGBBAA",
+	function(name, old, new)
+		local rgba = {0, 0, 0, 255}
+		local i = 0
 
-local combattext_bits = GetConVar("ttt_combattext_bits"):GetInt()
-net.Receive("ttt_combattext_changecvar", function()
-	combattext_bits = GetConVar("ttt_combattext_bits"):GetInt()
-end)
+		cl_cvars[name]:GetString():gsub("%x%x", function(x)
+			i = i + 1
+			rgba[i] = tonumber(x, 16)
+		end, 4)
+
+		combattext_color = Color(rgba[1], rgba[2], rgba[3], rgba[4])
+	end
+},
+ttt_combattext_scale = {
+	1.0, "Size of damage numbers",
+	function(name, old, new)
+		combattext_scale = cl_cvars[name]:GetFloat()
+		updatefont()
+	end
+},
+ttt_combattext_outline = {
+	1, "Draw damage numbers with outlines",
+	function(name, old, new)
+		combattext_outline = cl_cvars[name]:GetBool()
+		updatefont()
+	end
+},
+ttt_combattext_antialias = {
+	0, "Draw damage numbers with smooth text",
+	function(name, old, new)
+		combattext_antialias = cl_cvars[name]:GetBool()
+		updatefont()
+	end
+},
+ttt_dingaling = {
+	0, "Play a sound whenever you damage an enemy",
+	function(name, old, new)
+		dingaling = cl_cvars[name]:GetBool()
+		net.Start("ttt_combattext_changecvar")
+		net.SendToServer()
+	end,
+	{FCVAR_ARCHIVE, FCVAR_USERINFO}
+},
+ttt_dingaling_file = {
+	"ttt_combattext/hitsound.ogg", "The sound file to play on hit",
+	function(name, old, new)
+		dingaling_file = cl_cvars[name]:GetString()
+	end
+},
+ttt_dingaling_volume = {
+	0.75, "Desired volume of the hit sound",
+	function(name, old, new)
+		dingaling_volume = cl_cvars[name]:GetFloat()
+	end
+},
+ttt_dingaling_pitchmaxdmg = {
+	50, "Desired pitch of the hit sound when a maximum damage hit (150 damage) is done",
+	function(name, old, new)
+		dingaling_pitchmaxdmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
+	end
+},
+ttt_dingaling_pitchmindmg = {
+	100, "Desired pitch of the hit sound when a minimal damage hit (0 damage) is done",
+	function(name, old, new)
+		dingaling_pitchmindmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
+	end
+},
+ttt_dingaling_lasthit = {
+	0, "Play a sound whenever you kill an enemy",
+	function(name, old, new)
+		dingaling_lasthit = cl_cvars[name]:GetBool()
+		net.Start("ttt_combattext_changecvar")
+		net.SendToServer()
+	end,
+	{FCVAR_ARCHIVE, FCVAR_USERINFO}
+},
+ttt_dingaling_lasthit_file = {
+	"ttt_combattext/killsound.ogg", "The sound file to play on kill",
+	function(name, old, new)
+		dingaling_lasthit_file = cl_cvars[name]:GetString()
+	end
+},
+ttt_dingaling_lasthit_volume = {
+	0.75, "Desired volume of the last hit sound",
+	function(name, old, new)
+		dingaling_lasthit_volume = cl_cvars[name]:GetFloat()
+	end
+},
+ttt_dingaling_lasthit_pitchmaxdmg = {
+	50, "Desired pitch of the last hit sound when a maximum damage hit (150 damage) is done",
+	function(name, old, new)
+		dingaling_lasthit_pitchmaxdmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
+	end
+},
+ttt_dingaling_lasthit_pitchmindmg = {
+	100, "Desired pitch of the last hit sound when a minimal damage hit (0 damage) is done",
+	function(name, old, new)
+		dingaling_lasthit_pitchmindmg = math.Clamp(cl_cvars[name]:GetInt(), 0, 255)
+	end
+},
+}) do
+	cl_cvars[k] = CreateConVar(k, v[1], v[4] or FCVAR_ARCHIVE, v[2])
+	v[3](k)
+	cvars.AddChangeCallback(k, v[3])
+end
 
 local function RemapValClamped(val, a, b, c, d)
 	return c + (d - c) * math.min(math.max((val - a) / (b - a), 0), 1)
 end
 
-local numbers = {
-	head = 0, tail = 0,
-}
+local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
+
+local head, tail
+
+local RealTime = RealTime
 
 net.Receive("ttt_combattext", function()
 	local attacker = LocalPlayer()
@@ -181,7 +174,7 @@ net.Receive("ttt_combattext", function()
 		return
 	end
 
-	local damage = net.ReadUInt(combattext_bits)
+	local damage = net.ReadUInt(net.ReadBool() and 32 or 8)
 
 	local lasthit
 	if dingaling_lasthit then
@@ -213,7 +206,9 @@ net.Receive("ttt_combattext", function()
 		return
 	end
 
-	local victim = net.ReadEntity()
+	local victim = net.ReadBool()
+		and Entity(net.ReadUInt(maxplayers_bits) + 1)
+		or net.ReadEntity()
 	if not (victim and victim:IsValid()) then
 		return
 	end
@@ -223,49 +218,49 @@ net.Receive("ttt_combattext", function()
 	pos.z = pos.z + vmax.z + RemapValClamped(
 		pos:DistToSqr(attacker:GetPos()), 0, 65536, 0, 16)
 
-	local tail = numbers.tail
+	local num = tail
+
+	local batch = combattext_batching_window > 0
 
 	local realtime = RealTime()
 
-	if numbers.head ~= tail and combattext_batching_window > 0 then
-		local num = numbers[tail]
+	if num and batch
+		and victim == num.victim
+		and realtime - num.birth <= combattext_batching_window
+	then
+		num.birth = realtime
+		num.pos = pos
+		num.damage = num.damage + damage
+		num.str = ("-%d"):format(num.damage)
+		num.headshot = net.ReadBool()
 
-		if victim == num.victim
-			and realtime - num.birth <= combattext_batching_window
-		then
-			num.birth = realtime
-			num.pos = pos
-			num.damage = num.damage + damage
-			num.str = ("-%d"):format(num.damage)
-			num.headshot = net.ReadBool()
-
-			return
-		end
+		return
 	end
 
-	tail = tail + 1
-	numbers.tail = tail
-	numbers[tail] = {
+	tail = {
 		birth = realtime,
 		pos = pos,
-		damage = damage,
+		damage = batch and damage or nil,
+		victim = batch and victim or nil,
 		str = ("-%d"):format(damage),
 		headshot = net.ReadBool(),
 	}
 
-	if combattext_batching_window > 0 then
-		numbers[tail].victim = victim
+	if num then
+		num.next = tail
+	else
+		head = tail
 	end
 end)
 
-local RealTime, cam, surface = RealTime, cam, surface
+local cam, surface = cam, surface
 
 hook.Add("HUDPaint", "ttt_combattext_Think", function()
 	if not combattext then
 		return
 	end
 
-	if numbers.head == numbers.tail then
+	if not head then
 		return
 	end
 
@@ -275,20 +270,18 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 
 	local r, g, b, a = combattext_color:Unpack()
 
-	local num
-	for i = numbers.head + 1, numbers.tail do
-		num = numbers[i]
-
+	local num = head
+	while num do
 		local lifetime = realtime - num.birth
 
 		if lifetime > max_lifetime then
-			numbers[i] = nil
+			head = num.next
 
-			if i == numbers.tail then
-				numbers.head = 0
-				numbers.tail = 0
+			if head then
+				num.next = nil
 			else
-				numbers.head = i
+				tail = nil
+				break
 			end
 		else
 			local pos = num.pos
@@ -308,5 +301,7 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 				lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
 			surface.DrawText(num.str)
 		end
+
+		num = num.next
 	end
 end)

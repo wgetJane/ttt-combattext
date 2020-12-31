@@ -15,7 +15,6 @@ local combattext_lineofsight = CreateConVar("ttt_combattext_lineofsight", 1,
 local combattext_rounding = CreateConVar("ttt_combattext_rounding", 1,
 	FCVAR_ARCHIVE, "0: round down (floor)\n - 1: round off\n - 2: round up (ceiling)"
 ):GetInt()
-local combattext_bits = GetConVar("ttt_combattext_bits"):GetInt()
 
 cvars.AddChangeCallback("ttt_combattext_bodyarmor", function(name, old, new)
 	combattext_bodyarmor = GetConVar(name):GetBool()
@@ -29,14 +28,8 @@ end)
 cvars.AddChangeCallback("ttt_combattext_rounding", function(name, old, new)
 	combattext_rounding = GetConVar(name):GetInt()
 end)
-cvars.AddChangeCallback("ttt_combattext_bits", function(name, old, new)
-	combattext_bits = GetConVar(name):GetInt()
 
-	net.Start("ttt_combattext_changecvar")
-	net.Broadcast()
-end)
-
-local function updateplayerinfo(ply)
+local function updateplayerinfo(_, ply)
 	if not ply then
 		return
 	end
@@ -54,9 +47,7 @@ local function updateplayerinfo(ply)
 	return cl_cvars
 end
 
-net.Receive("ttt_combattext_changecvar", function(len, ply)
-	updateplayerinfo(ply)
-end)
+net.Receive("ttt_combattext_changecvar", updateplayerinfo)
 
 hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim, dmginfo)
 	if not (victim
@@ -81,6 +72,9 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 
 	victim.ttt_combattext_hitdata = next(data) and data
 end)
+
+local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
+local maxplayers = 2 ^ maxplayers_bits
 
 hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function(victim, dmginfo, took)
 	if not (took
@@ -107,7 +101,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 	local cl_cvars = attacker.ttt_combattext_cvars
 	if not cl_cvars then
-		cl_cvars = updateplayerinfo(attacker)
+		cl_cvars = updateplayerinfo(nil, attacker)
 	end
 	local combattext_on = cl_cvars[1]
 	local dingaling_on = cl_cvars[2]
@@ -172,17 +166,17 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 		damage = damage / 0.7
 	end
 
-	local bits = combattext_bits
 	local rounding = combattext_rounding
 
-	damage = math.min(
-		rounding == 1 and math.floor(damage + 0.5)
-			or (rounding == 2 and math.ceil or math.floor)(damage),
-		2^bits - 1
-	)
+	damage = rounding == 1 and math.floor(damage + 0.5)
+		or (rounding == 2 and math.ceil or math.floor)(damage)
 
 	net.Start("ttt_combattext")
-	net.WriteUInt(damage, bits)
+
+	local bigint = damage > 255
+	net.WriteBool(bigint)
+	net.WriteUInt(damage, bigint and 32 or 8)
+
 	if lasthit_on then
 		local kill
 		if victim.Alive then
@@ -190,12 +184,24 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 		elseif victim.Health then
 			kill = victim:Health() <= 0
 		end
+
 		net.WriteBool(kill)
 	end
+
 	if combattext_on then
-		net.WriteEntity(victim)
+		local idx = victim:EntIndex()
+
+		if idx > 0 and idx <= maxplayers then
+			net.WriteBool(true)
+			net.WriteUInt(idx - 1, maxplayers_bits)
+		else
+			net.WriteBool(false)
+			net.WriteEntity(victim)
+		end
+
 		net.WriteBool(victim.LastHitGroup
 			and victim:LastHitGroup() == HITGROUP_HEAD)
 	end
+
 	net.Send(attacker)
 end)

@@ -44,4 +44,3 @@ this was also just made for a private mostly-vanilla ttt server, so i cannot car
 `ttt_combattext_disguise 0` TTT: Don't show damage text if target is disguised  
 `ttt_combattext_lineofsight 1` Don't show damage text if the target cannot be seen  
 `ttt_combattext_rounding 1` 0: round down, 1: round off, 2: round up  
-`ttt_combattext_bits 8` Size of integers used for damage numbers, increase this from default if the server has weapons that deal more than 250 damage  
