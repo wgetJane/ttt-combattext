@@ -161,6 +161,8 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 		combattext_on = false
 	end
 
+	damage = math.floor(damage * 10000 + 0.5) * 0.0001
+
 	if data and data.bodyarmor then
 		-- armour damage scale is hardcoded as 0.7
 		damage = damage / 0.7
