@@ -1,4 +1,5 @@
-resource.AddSingleFile("sound/ttt_combattext/hitsound.wav")
+resource.AddSingleFile("sound/ttt_combattext/hitsound.ogg")
+resource.AddSingleFile("sound/ttt_combattext/killsound.ogg")
 
 util.AddNetworkString("ttt_combattext")
 util.AddNetworkString("ttt_combattext_changecvar")
