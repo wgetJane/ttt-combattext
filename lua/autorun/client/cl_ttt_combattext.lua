@@ -17,24 +17,16 @@ local dingaling_lasthit_pitchmaxdmg = 50
 local dingaling_lasthit_pitchmindmg = 100
 
 local cl_cvars = {}
+local function updateuserinfo()
+end
 local function updatefont()
-	local fontdata = {
-		font = combattext_font,
-		size = 26 * combattext_scale,
-		outline = combattext_outline,
-		antialias = combattext_antialias,
-	}
-	surface.CreateFont("ttt_combattext_font", fontdata)
-	fontdata.size = fontdata.size * 4 / 3
-	surface.CreateFont("ttt_combattext_font_headshot", fontdata)
 end
 for k, v in pairs({
 ttt_combattext = {
 	1, "Display damage numbers",
 	function(name, old, new)
 		combattext = cl_cvars[name]:GetBool()
-		net.Start("ttt_combattext_changecvar")
-		net.SendToServer()
+		updateuserinfo()
 	end,
 	{FCVAR_ARCHIVE, FCVAR_USERINFO}
 },
@@ -90,8 +82,7 @@ ttt_dingaling = {
 	0, "Play a sound whenever you damage an enemy",
 	function(name, old, new)
 		dingaling = cl_cvars[name]:GetBool()
-		net.Start("ttt_combattext_changecvar")
-		net.SendToServer()
+		updateuserinfo()
 	end,
 	{FCVAR_ARCHIVE, FCVAR_USERINFO}
 },
@@ -123,8 +114,7 @@ ttt_dingaling_lasthit = {
 	0, "Play a sound whenever you kill an enemy",
 	function(name, old, new)
 		dingaling_lasthit = cl_cvars[name]:GetBool()
-		net.Start("ttt_combattext_changecvar")
-		net.SendToServer()
+		updateuserinfo()
 	end,
 	{FCVAR_ARCHIVE, FCVAR_USERINFO}
 },
@@ -157,6 +147,22 @@ ttt_dingaling_lasthit_pitchmindmg = {
 	v[3](k)
 	cvars.AddChangeCallback(k, v[3])
 end
+updateuserinfo = function()
+	net.Start("ttt_combattext_changecvar")
+	net.SendToServer()
+end
+updatefont = function()
+	local fontdata = {
+		font = combattext_font,
+		size = 26 * combattext_scale,
+		outline = combattext_outline,
+		antialias = combattext_antialias,
+	}
+	surface.CreateFont("ttt_combattext_font", fontdata)
+	fontdata.size = fontdata.size * 4 / 3
+	surface.CreateFont("ttt_combattext_font_headshot", fontdata)
+end
+updatefont()
 
 local function RemapValClamped(val, a, b, c, d)
 	return c + (d - c) * math.min(math.max((val - a) / (b - a), 0), 1)
