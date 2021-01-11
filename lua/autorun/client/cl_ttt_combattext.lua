@@ -205,7 +205,7 @@ net.Receive("ttt_combattext", function()
 		local pitch = pitchmin == pitchmax and pitchmin
 			or RemapValClamped(damage, 0, 150, pitchmin, pitchmax)
 
-		attacker:EmitSound(file, SNDLVL_NONE, pitch, volume, CHAN_STATIC)
+		attacker:EmitSound(file, 0, pitch, volume, CHAN_STATIC)
 	end
 
 	if not combattext then
