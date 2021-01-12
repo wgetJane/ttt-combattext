@@ -2,7 +2,6 @@ resource.AddSingleFile("sound/ttt_combattext/hitsound.ogg")
 resource.AddSingleFile("sound/ttt_combattext/killsound.ogg")
 
 util.AddNetworkString("ttt_combattext")
-util.AddNetworkString("ttt_combattext_changecvar")
 
 local combattext_bodyarmor = CreateConVar("ttt_combattext_bodyarmor", 1,
 	FCVAR_ARCHIVE + FCVAR_NOTIFY, "TTT: Prevent damage text from revealing if the target is wearing body armor"
@@ -16,18 +15,24 @@ local combattext_lineofsight = CreateConVar("ttt_combattext_lineofsight", 1,
 local combattext_rounding = CreateConVar("ttt_combattext_rounding", 1,
 	FCVAR_ARCHIVE, "0: round down (floor)\n - 1: round off\n - 2: round up (ceiling)"
 ):GetInt()
+local dingaling_lasthit_allowed = CreateConVar("ttt_dingaling_lasthit_allowed", 1,
+	FCVAR_ARCHIVE + FCVAR_NOTIFY, "Allow players to enable lasthit sounds"
+):GetBool()
 
 cvars.AddChangeCallback("ttt_combattext_bodyarmor", function(name, old, new)
-	combattext_bodyarmor = GetConVar(name):GetBool()
+	combattext_bodyarmor = tonumber(new) == 1
 end)
 cvars.AddChangeCallback("ttt_combattext_disguise", function(name, old, new)
-	combattext_disguise = GetConVar(name):GetBool()
+	combattext_disguise = tonumber(new) == 1
 end)
 cvars.AddChangeCallback("ttt_combattext_lineofsight", function(name, old, new)
-	combattext_lineofsight = GetConVar(name):GetBool()
+	combattext_lineofsight = tonumber(new) == 1
 end)
 cvars.AddChangeCallback("ttt_combattext_rounding", function(name, old, new)
-	combattext_rounding = GetConVar(name):GetInt()
+	combattext_rounding = tonumber(new) or 1
+end)
+cvars.AddChangeCallback("ttt_dingaling_lasthit_allowed", function(name, old, new)
+	dingaling_lasthit_allowed = tonumber(new) == 1
 end)
 
 local function updateplayerinfo(_, ply)
@@ -48,7 +53,7 @@ local function updateplayerinfo(_, ply)
 	return cl_cvars
 end
 
-net.Receive("ttt_combattext_changecvar", updateplayerinfo)
+net.Receive("ttt_combattext", updateplayerinfo)
 
 hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim, dmginfo)
 	if not (victim
@@ -107,7 +112,8 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 	local combattext_on = cl_cvars[1]
 	local dingaling_on = cl_cvars[2]
 	local lasthit_on = cl_cvars[3]
-	if not (combattext_on or dingaling_on or lasthit_on) then
+	local lasthit_allowed = lasthit_on and dingaling_lasthit_allowed or false
+	if not (combattext_on or dingaling_on or lasthit_allowed) then
 		return
 	end
 
@@ -138,7 +144,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 			trace.endpos = victim:EyePos()
 
 			if util.TraceLine(trace).Fraction < 1 then
-				if not (dingaling_on or lasthit_on) then
+				if not (dingaling_on or lasthit_allowed) then
 					return
 				end
 
@@ -155,14 +161,16 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 		and attacker.GetTraitor
 		and not attacker:GetTraitor()
 	then
-		if not (dingaling_on or lasthit_on) then
+		if not (dingaling_on or lasthit_allowed) then
 			return
 		end
 
 		combattext_on = false
 	end
 
-	damage = math.floor(damage * 10000 + 0.5) * 0.0001
+	if damage % 1 ~= 0 then
+		damage = math.floor(damage * 10000 + 0.5) * 0.0001
+	end
 
 	if data and data.bodyarmor then
 		-- armour damage scale is hardcoded as 0.7
@@ -182,7 +190,10 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 	if lasthit_on then
 		local kill
-		if victim.Alive then
+
+		if not lasthit_allowed then
+			kill = false
+		elseif victim.Alive then
 			kill = victim:Alive() ~= true
 		elseif victim.Health then
 			kill = victim:Health() <= 0
