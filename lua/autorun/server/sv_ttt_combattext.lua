@@ -23,7 +23,7 @@ cvars.AddChangeCallback("ttt_combattext_bodyarmor", function(name, old, new)
 	combattext_bodyarmor = tonumber(new) or 1
 end)
 cvars.AddChangeCallback("ttt_combattext_disguise", function(name, old, new)
-	combattext_disguise = tonumber(new) or 1
+	combattext_disguise = tonumber(new) or 0
 end)
 cvars.AddChangeCallback("ttt_combattext_lineofsight", function(name, old, new)
 	combattext_lineofsight = tonumber(new) == 1

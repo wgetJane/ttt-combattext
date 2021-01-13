@@ -1,7 +1,7 @@
 local combattext = true
 local combattext_batching_window = 0.3
 local combattext_font = "Arial"
-local combattext_color = Color(255, 255, 0, 255)
+local combattext_r, combattext_g, combattext_b, combattext_a = 255, 255, 0, 255
 local combattext_scale = 1.0
 local combattext_outline = true
 local combattext_antialias = false
@@ -53,7 +53,7 @@ ttt_combattext_color = {
 			rgba[i] = tonumber(x, 16)
 		end, 4)
 
-		combattext_color = Color(rgba[1], rgba[2], rgba[3], rgba[4])
+		combattext_r, combattext_g, combattext_b, combattext_a = rgba[1], rgba[2], rgba[3], rgba[4]
 	end
 },
 ttt_combattext_scale = {
@@ -274,7 +274,7 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 	local max_lifetime = 1.5
 	local float_height = 32
 
-	local r, g, b, a = combattext_color:Unpack()
+	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
 	local headshot
 
 	local num = head
