@@ -40,7 +40,8 @@ this was also just made for a private mostly-vanilla ttt server, so i cannot car
 `ttt_dingaling_lasthit_pitchmindmg 100` Desired pitch of the last hit sound when a minimal damage hit (0 damage) is done  
 
 #### server cvars
-`ttt_combattext_bodyarmor 1` TTT: Prevent damage text from revealing if the target is wearing body armor  
-`ttt_combattext_disguise 0` TTT: Don't show damage text if target is disguised  
+`ttt_combattext_bodyarmor 1` TTT: Prevent damage text from revealing if the target is wearing body armor (1 = except against detectives and fellow traitors, 2 = no exceptions)  
+`ttt_combattext_disguise 0` TTT: Don't show damage text if target is disguised (1 = still let hitsound play, 2 = don't let hitsound play too)  
 `ttt_combattext_lineofsight 1` Don't show damage text if the target cannot be seen  
 `ttt_combattext_rounding 1` 0: round down, 1: round off, 2: round up  
+`ttt_dingaling_lasthit_allowed 1` Allow players to enable kill sounds  

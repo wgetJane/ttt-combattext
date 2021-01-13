@@ -4,11 +4,11 @@ resource.AddSingleFile("sound/ttt_combattext/killsound.ogg")
 util.AddNetworkString("ttt_combattext")
 
 local combattext_bodyarmor = CreateConVar("ttt_combattext_bodyarmor", 1,
-	FCVAR_ARCHIVE + FCVAR_NOTIFY, "TTT: Prevent damage text from revealing if the target is wearing body armor"
-):GetBool()
+	FCVAR_ARCHIVE + FCVAR_NOTIFY, "TTT: Prevent damage text from revealing if the target is wearing body armor\n   (1 = except against detectives and fellow traitors, 2 = no exceptions)"
+):GetInt()
 local combattext_disguise = CreateConVar("ttt_combattext_disguise", 0,
-	FCVAR_ARCHIVE + FCVAR_NOTIFY, "TTT: Don't show damage text if target is disguised"
-):GetBool()
+	FCVAR_ARCHIVE + FCVAR_NOTIFY, "TTT: Don't show damage text if target is disguised\n   (1 = still let hitsound play, 2 = don't let hitsound play too)"
+):GetInt()
 local combattext_lineofsight = CreateConVar("ttt_combattext_lineofsight", 1,
 	FCVAR_ARCHIVE + FCVAR_NOTIFY, "Don't show damage text if the target cannot be seen"
 ):GetBool()
@@ -16,14 +16,14 @@ local combattext_rounding = CreateConVar("ttt_combattext_rounding", 1,
 	FCVAR_ARCHIVE, "0: round down (floor)\n - 1: round off\n - 2: round up (ceiling)"
 ):GetInt()
 local dingaling_lasthit_allowed = CreateConVar("ttt_dingaling_lasthit_allowed", 1,
-	FCVAR_ARCHIVE + FCVAR_NOTIFY, "Allow players to enable lasthit sounds"
+	FCVAR_ARCHIVE + FCVAR_NOTIFY, "Allow players to enable kill sounds"
 ):GetBool()
 
 cvars.AddChangeCallback("ttt_combattext_bodyarmor", function(name, old, new)
-	combattext_bodyarmor = tonumber(new) == 1
+	combattext_bodyarmor = tonumber(new) or 1
 end)
 cvars.AddChangeCallback("ttt_combattext_disguise", function(name, old, new)
-	combattext_disguise = tonumber(new) == 1
+	combattext_disguise = tonumber(new) or 1
 end)
 cvars.AddChangeCallback("ttt_combattext_lineofsight", function(name, old, new)
 	combattext_lineofsight = tonumber(new) == 1
@@ -56,45 +56,55 @@ end
 net.Receive("ttt_combattext", updateplayerinfo)
 
 hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim, dmginfo)
-	if not (victim
-		and victim:IsValid()
+	if not (IsValid(victim)
 		and (victim:IsPlayer() or victim:IsNPC())
 	) then
 		return
 	end
 
-	local data = {}
+	-- store certain information that might not be available in the PostEntityTakeDamage hook
+	local data
 
-	if combattext_bodyarmor then
-		data.bodyarmor = victim.HasEquipmentItem
+	if combattext_bodyarmor > 0 then
+		if not data then
+			data = {}
+			victim.ttt_combattext_hitdata = data
+		end
+
+		data.bodyarmor = dmginfo:IsBulletDamage()
+			and victim.HasEquipmentItem
 			and victim:HasEquipmentItem(EQUIP_ARMOR)
-			and dmginfo:IsBulletDamage()
+			and not (combattext_bodyarmor ~= 2
+				and victim.GetDetective
+				and victim:GetDetective())
 			or false
 	end
 
-	if combattext_disguise then
+	if combattext_disguise > 0 then
+		if not data then
+			data = {}
+			victim.ttt_combattext_hitdata = data
+		end
+
 		data.disguise = victim:GetNWBool("disguised", false)
 	end
-
-	victim.ttt_combattext_hitdata = next(data) and data
 end)
 
+-- indices from 1 up to maxplayers are reserved for players, so net messages can be optimised for players
 local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
 local maxplayers = 2 ^ maxplayers_bits
 
 hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function(victim, dmginfo, took)
 	if not (took
-		and victim
-		and victim:IsValid()
+		and IsValid(victim)
 		and (victim:IsPlayer() or victim:IsNPC())
 	) then
 		return
 	end
 
 	local attacker = dmginfo:GetAttacker()
-	if not (attacker
+	if not (IsValid(attacker)
 		and attacker ~= victim
-		and attacker:IsValid()
 		and attacker:IsPlayer()
 	) then
 		return
@@ -117,8 +127,41 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 		return
 	end
 
+	local hidetext = false
+
 	local attacker_alive = attacker:Alive()
 
+	local data = victim.ttt_combattext_hitdata
+	victim.ttt_combattext_hitdata = nil
+
+	-- check if disguised
+	if attacker_alive
+		and data and data.disguise
+		and attacker.GetTraitor
+		and not attacker:GetTraitor()
+	then
+		if combattext_disguise == 2
+			or not (dingaling_on or lasthit_allowed)
+		then
+			return
+		end
+
+		hidetext = true
+	end
+
+	-- check if victim is in attacker's pvs
+	if attacker_alive
+		and combattext_lineofsight
+		and not attacker:TestPVS(victim)
+	then
+		if not (dingaling_on or lasthit_allowed) then
+			return
+		end
+
+		hidetext = true
+	end
+
+	-- check for line of sight
 	if attacker_alive
 		and combattext_lineofsight
 		and not ( -- attacker obviously had line of sight for hitscan weapons
@@ -148,31 +191,22 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 					return
 				end
 
-				combattext_on = false
+				hidetext = true
 			end
 		end
 	end
 
-	local data = victim.ttt_combattext_hitdata
-	victim.ttt_combattext_hitdata = nil
-
-	if attacker_alive
-		and data and data.disguise
-		and attacker.GetTraitor
-		and not attacker:GetTraitor()
-	then
-		if not (dingaling_on or lasthit_allowed) then
-			return
-		end
-
-		combattext_on = false
-	end
-
+	-- hacky way to fix rounding
 	if damage % 1 ~= 0 then
 		damage = math.floor(damage * 10000 + 0.5) * 0.0001
 	end
 
-	if data and data.bodyarmor then
+	if attacker_alive
+		and data and data.bodyarmor
+		and not (combattext_bodyarmor ~= 2
+			and attacker.GetTraitor
+			and attacker:GetTraitor())
+	then
 		-- armour damage scale is hardcoded as 0.7
 		damage = damage / 0.7
 	end
@@ -184,6 +218,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 	net.Start("ttt_combattext")
 
+	-- dealing more than 255 damage in one hit is rare, so use only 8 bits by default
 	local bigint = damage > 255
 	net.WriteBool(bigint)
 	net.WriteUInt(damage, bigint and 32 or 8)
@@ -193,9 +228,9 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 		if not lasthit_allowed then
 			kill = false
-		elseif victim.Alive then
+		elseif victim.Alive then -- players
 			kill = victim:Alive() ~= true
-		elseif victim.Health then
+		elseif victim.Health then -- npcs
 			kill = victim:Health() <= 0
 		end
 
@@ -203,18 +238,26 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 	end
 
 	if combattext_on then
-		local idx = victim:EntIndex()
-
-		if idx > 0 and idx <= maxplayers then
+		if hidetext then
 			net.WriteBool(true)
-			net.WriteUInt(idx - 1, maxplayers_bits)
 		else
 			net.WriteBool(false)
-			net.WriteEntity(victim)
-		end
 
-		net.WriteBool(victim.LastHitGroup
-			and victim:LastHitGroup() == HITGROUP_HEAD)
+			local idx = victim:EntIndex()
+
+			-- use only 1-7 bits for players, use 16 bits for npcs
+			if idx > 0 and idx <= maxplayers then
+				net.WriteBool(true)
+				net.WriteUInt(idx - 1, maxplayers_bits)
+			else
+				net.WriteBool(false)
+				net.WriteEntity(victim)
+			end
+
+			-- in tf2, damage text is a bit larger with crits
+			net.WriteBool(victim.LastHitGroup
+				and victim:LastHitGroup() == HITGROUP_HEAD)
+		end
 	end
 
 	net.Send(attacker)

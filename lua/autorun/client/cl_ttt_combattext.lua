@@ -27,7 +27,7 @@ ttt_combattext = {
 		combattext = tonumber(new) == 1
 		updateuserinfo()
 	end,
-	{FCVAR_ARCHIVE, FCVAR_USERINFO}
+	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
 ttt_combattext_batching_window = {
 	0.3, "Maximum delay between damage events in order to batch numbers, set to 0 to disable",
@@ -83,7 +83,7 @@ ttt_dingaling = {
 		dingaling = tonumber(new) == 1
 		updateuserinfo()
 	end,
-	{FCVAR_ARCHIVE, FCVAR_USERINFO}
+	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
 ttt_dingaling_file = {
 	"ttt_combattext/hitsound.ogg", "The sound file to play on hit",
@@ -115,7 +115,7 @@ ttt_dingaling_lasthit = {
 		dingaling_lasthit = tonumber(new) == 1
 		updateuserinfo()
 	end,
-	{FCVAR_ARCHIVE, FCVAR_USERINFO}
+	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
 ttt_dingaling_lasthit_file = {
 	"ttt_combattext/killsound.ogg", "The sound file to play on kill",
@@ -176,7 +176,7 @@ local RealTime = RealTime
 
 net.Receive("ttt_combattext", function()
 	local attacker = LocalPlayer()
-	if not (attacker and attacker:IsValid()) then
+	if not IsValid(attacker) then
 		return
 	end
 
@@ -208,14 +208,14 @@ net.Receive("ttt_combattext", function()
 		attacker:EmitSound(file, 0, pitch, volume, CHAN_STATIC)
 	end
 
-	if not combattext then
+	if not combattext or net.ReadBool() then
 		return
 	end
 
 	local victim = net.ReadBool()
 		and Entity(net.ReadUInt(maxplayers_bits) + 1)
 		or net.ReadEntity()
-	if not (victim and victim:IsValid()) then
+	if not IsValid(victim) then
 		return
 	end
 
@@ -275,6 +275,7 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 	local float_height = 32
 
 	local r, g, b, a = combattext_color:Unpack()
+	local headshot
 
 	local num = head
 	while num do
@@ -299,9 +300,12 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 				pos.z + lifeperc * float_height):ToScreen()
 			cam.End3D()
 
-			surface.SetFont(num.headshot
-				and "ttt_combattext_font_headshot"
-				or "ttt_combattext_font")
+			if num.headshot ~= headshot then
+				headshot = num.headshot
+				surface.SetFont(headshot
+					and "ttt_combattext_font_headshot"
+					or "ttt_combattext_font")
+			end
 			surface.SetTextPos(pos.x, pos.y)
 			surface.SetTextColor(r, g, b,
 				lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
