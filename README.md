@@ -4,19 +4,19 @@ i made this while listening to the undertale concert (it filled me with determin
 
 i only bothered making this because the only damage numbers mod i found on the gmod workshop is weird as hell, it's very overengineered and all its config options are serversided and it looks distracting as hell i dont wanna use that
 
-by default, this addon shows the damage you would've dealt without armour against armoured players, since it'd be stupid if you can just shoot people in the feet to check if theyre wearing armour
+**press F1 and go to the "Combat text" tab to customise damage text and hit sounds**
+
+by default, this addon shows the damage you would've dealt without armour against armoured players, since it'd be silly if you can just shoot people in the feet to check if theyre wearing armour
 
 this addon has the option to hide damage numbers from disguised targets, but this is disabled by default because it doesnt bother me
-
-client cvars are archived so you only need to change them once in the console and they'll persist in any server
 
 the default damage number font is arial, yellow, with outlines, but clients can change change colour, size, etc to whatever they want and change the font to any font installed on their computer
 
 hitsound is disabled by default, and the default hitsound is from quake but clients can change the sound file it plays to whatever
 
-this is made for ttt but it should probably still work with other game modes but i don't give a shit if they don't
+this is made for ttt but it should probably still work with other game modes but i don't really care if they don't
 
-this was also just made for a private mostly-vanilla ttt server, so i cannot care less if it doesn't work with le epic overpowered ww2 silenced awp funny jihad random tester explosive harpoon jetpack station donator golden anime deagle freddy fazbear cumshot launcher ttt addons
+this was also just made for a private mostly-vanilla ttt server, so i cannot care less if it isn't compatible with le epic overpowered ww2 silenced awp funny jihad random tester explosive harpoon jetpack station donator golden anime deagle freddy fazbear cumshot launcher ttt addons
 
 #### client cvars
 `ttt_combattext 1` Display damage numbers  
