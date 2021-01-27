@@ -261,29 +261,32 @@ net.Receive("ttt_combattext", function()
 	local realtime = RealTime()
 
 	if num and batch
-		and victim == num.victim
-		and realtime - num.birth <= combattext_batching_window
+		and victim == num[7]
+		and realtime - num[2] <= combattext_batching_window
 	then
-		num.birth = realtime
-		num.pos = pos
-		num.damage = num.damage + damage
-		num.str = ("-%d"):format(num.damage)
-		num.headshot = net.ReadBool()
+		damage = num[6] + damage
+
+		num[2] = realtime
+		num[3] = pos
+		num[4] = ("-%d"):format(damage)
+		num[5] = net.ReadBool()
+		num[6] = damage
 
 		return
 	end
 
 	tail = {
-		birth = realtime,
-		pos = pos,
-		damage = batch and damage or nil,
-		victim = batch and victim or nil,
-		str = ("-%d"):format(damage),
-		headshot = net.ReadBool(),
+		false,
+		realtime,
+		pos,
+		("-%d"):format(damage),
+		net.ReadBool(),
+		batch and damage or nil,
+		batch and victim or nil,
 	}
 
 	if num then
-		num.next = tail
+		num[1] = tail
 	else
 		head = tail
 	end
@@ -309,19 +312,19 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 
 	local num = head
 	while num do
-		local lifetime = realtime - num.birth
+		local lifetime = realtime - num[2]
 
 		if lifetime > max_lifetime then
-			head = num.next
+			head = num[1]
 
 			if head then
-				num.next = nil
+				num[1] = false
 			else
 				tail = nil
 				break
 			end
 		else
-			local pos = num.pos
+			local pos = num[3]
 
 			local lifeperc = lifetime / max_lifetime
 
@@ -329,8 +332,8 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 				pos.x, pos.y, pos.z + lifeperc * float_height
 			):ToScreen()
 
-			if num.headshot ~= headshot then
-				headshot = num.headshot
+			if num[5] ~= headshot then
+				headshot = num[5]
 				surface.SetFont(headshot
 					and "ttt_combattext_font_headshot"
 					or "ttt_combattext_font")
@@ -338,10 +341,10 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 			surface.SetTextPos(pos.x, pos.y)
 			surface.SetTextColor(r, g, b,
 				lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
-			surface.DrawText(num.str)
+			surface.DrawText(num[4])
 		end
 
-		num = num.next
+		num = num[1]
 	end
 end)
 

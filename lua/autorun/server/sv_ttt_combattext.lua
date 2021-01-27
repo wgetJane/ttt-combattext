@@ -95,9 +95,8 @@ local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
 local maxplayers = 2 ^ maxplayers_bits
 
 hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function(victim, dmginfo, took)
-	if not (took
-		and IsValid(victim)
-		and (victim:IsPlayer() or victim:IsNPC())
+	if not (IsValid(victim)
+		and (victim:IsPlayer() or took and victim:IsNPC())
 	) then
 		return
 	end
@@ -182,11 +181,11 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 			filter = attacker,
 		}
 
-		if util.TraceLine(trace).Fraction < 1 then
+		if util.TraceLine(trace).Hit then
 			-- perform a second trace
 			trace.endpos = victim:EyePos()
 
-			if util.TraceLine(trace).Fraction < 1 then
+			if util.TraceLine(trace).Hit then
 				if not (dingaling_on or lasthit_allowed) then
 					return
 				end
