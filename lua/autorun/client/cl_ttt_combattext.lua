@@ -314,8 +314,10 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 	while num do
 		local lifetime = realtime - num[2]
 
+		local nxt = num[1]
+
 		if lifetime > max_lifetime then
-			head = num[1]
+			head = nxt
 
 			if head then
 				num[1] = false
@@ -344,7 +346,7 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 			surface.DrawText(num[4])
 		end
 
-		num = num[1]
+		num = nxt
 	end
 end)
 
