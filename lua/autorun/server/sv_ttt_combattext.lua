@@ -56,9 +56,7 @@ end
 net.Receive("ttt_combattext", updateplayerinfo)
 
 hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim, dmginfo)
-	if not (IsValid(victim)
-		and (victim:IsPlayer() or victim:IsNPC())
-	) then
+	if not (IsValid(victim) and victim:IsPlayer()) then
 		return
 	end
 
@@ -66,27 +64,80 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 	local data
 
 	if combattext_bodyarmor > 0 then
-		if not data then
-			data = {}
-			victim.ttt_combattext_hitdata = data
-		end
+		local scale
 
-		data.bodyarmor = dmginfo:IsBulletDamage()
-			and victim.HasEquipmentItem
+		if TTT2 then
+			local cv = ARMOR and ARMOR.cv
+
+			if not (cv
+				and cv.armor_classic
+				and cv.armor_classic:GetBool()
+			) then
+				goto done
+			end
+
+			if combattext_bodyarmor ~= 2
+				and victim:GetBaseRole() == ROLE_DETECTIVE
+			then
+				goto done
+			end
+
+			if GetRoundState() ~= ROUND_ACTIVE then
+				goto done
+			end
+
+			local armor = victim:GetArmor()
+
+			if armor == 0 then
+				goto done
+			end
+
+			if not (
+				dmginfo:IsDamageType(DMG_BULLET)
+				or dmginfo:IsDamageType(DMG_CLUB)
+			) then
+				goto done
+			end
+
+			if victim:LastHitGroup() == HITGROUP_HEAD
+				and cv.item_armor_block_headshots
+				and not cv.item_armor_block_headshots:GetBool()
+			then
+				goto done
+			end
+
+			scale = 1 / 0.7
+
+			::done::
+		elseif victim.HasEquipmentItem
 			and victim:HasEquipmentItem(EQUIP_ARMOR)
 			and not (combattext_bodyarmor ~= 2
 				and victim.GetDetective
 				and victim:GetDetective())
-			or false
+			and dmginfo:IsBulletDamage()
+		then
+			scale = 1 / 0.7
+		end
+
+		if scale then
+			if not data then
+				data = {}
+				victim.ttt_combattext_hitdata = data
+			end
+
+			data.bodyarmor = scale
+		end
 	end
 
-	if combattext_disguise > 0 then
+	if combattext_disguise > 0
+		and victim:GetNWBool("disguised", false)
+	then
 		if not data then
 			data = {}
 			victim.ttt_combattext_hitdata = data
 		end
 
-		data.disguise = victim:GetNWBool("disguised", false)
+		data.disguise = true
 	end
 end)
 
@@ -197,7 +248,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 	-- hacky way to fix rounding
 	if damage % 1 ~= 0 then
-		damage = math.floor(damage * 10000 + 0.5) * 0.0001
+		damage = math.floor(damage * 10000 + 0.5) * (1 / 10000)
 	end
 
 	if attacker_alive
@@ -206,8 +257,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 			and attacker.GetTraitor
 			and attacker:GetTraitor())
 	then
-		-- armour damage scale is hardcoded as 0.7
-		damage = damage / 0.7
+		damage = damage * data.bodyarmor
 	end
 
 	local rounding = combattext_rounding
