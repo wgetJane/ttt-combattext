@@ -185,7 +185,7 @@ local function updatefontfn()
 	}
 	surface.CreateFont("ttt_combattext_font", fontdata)
 
-	fontdata.size = fontdata.size * 4 / 3
+	fontdata.size = fontdata.size * (4 / 3)
 	surface.CreateFont("ttt_combattext_font_headshot", fontdata)
 end
 updatefontfn()
@@ -248,7 +248,10 @@ net.Receive("ttt_combattext", function()
 	local pos = victim:GetPos()
 	local _, vmax = victim:GetCollisionBounds()
 	pos.z = pos.z + vmax.z + RemapValClamped(
-		pos:DistToSqr(attacker:GetPos()), 0, 65536, 0, 16)
+			pos:DistToSqr(attacker:GetPos()),
+			0, 256 * 256,
+			0, 16
+		)
 
 	if updatefont then
 		updatefontfn()
@@ -292,20 +295,21 @@ net.Receive("ttt_combattext", function()
 	end
 end)
 
-local surface = surface
+local vec = Vector()
 
-hook.Add("HUDPaint", "ttt_combattext_Think", function()
-	if not combattext then
-		return
-	end
+local SetFont, SetTextPos, SetTextColor, DrawText =
+	surface.SetFont, surface.SetTextPos, surface.SetTextColor, surface.DrawText
 
-	if not head then
+hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
+	if not (head and combattext) then
 		return
 	end
 
 	local realtime = RealTime()
 	local max_lifetime = 1.5
 	local float_height = 32
+
+	local vec = vec
 
 	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
 	local headshot
@@ -319,7 +323,7 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 		if lifetime > max_lifetime then
 			head = nxt
 
-			if head then
+			if nxt then
 				num[1] = false
 			else
 				tail = nil
@@ -330,20 +334,28 @@ hook.Add("HUDPaint", "ttt_combattext_Think", function()
 
 			local lifeperc = lifetime / max_lifetime
 
-			pos = Vector(
-				pos.x, pos.y, pos.z + lifeperc * float_height
-			):ToScreen()
+			vec[1] = pos[1]
+			vec[2] = pos[2]
+			vec[3] = pos[3] + lifeperc * float_height
 
-			if num[5] ~= headshot then
-				headshot = num[5]
-				surface.SetFont(headshot
-					and "ttt_combattext_font_headshot"
-					or "ttt_combattext_font")
+			pos = vec:ToScreen()
+
+			if pos.visible then
+				if num[5] ~= headshot then
+					headshot = num[5]
+
+					SetFont(headshot
+						and "ttt_combattext_font_headshot"
+						or "ttt_combattext_font")
+				end
+
+				SetTextPos(pos.x, pos.y)
+
+				SetTextColor(r, g, b,
+					lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
+
+				DrawText(num[4])
 			end
-			surface.SetTextPos(pos.x, pos.y)
-			surface.SetTextColor(r, g, b,
-				lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
-			surface.DrawText(num[4])
 		end
 
 		num = nxt
