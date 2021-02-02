@@ -234,18 +234,22 @@ net.Receive("ttt_combattext", function()
 		attacker:EmitSound(file, 0, pitch, volume, CHAN_STATIC)
 	end
 
-	if not combattext or net.ReadBool() then
+	if not combattext then
 		return
 	end
 
-	local victim = net.ReadBool()
-		and Entity(net.ReadUInt(maxplayers_bits) + 1)
-		or net.ReadEntity()
-	if not IsValid(victim) then
+	local uint = net.ReadUInt(2)
+
+	local victim = uint > 1 and Entity(net.ReadUInt(maxplayers_bits) + 1)
+		or uint == 1 and net.ReadEntity()
+		or nil
+
+	if not (victim and IsValid(victim)) then
 		return
 	end
 
-	local pos = victim:GetPos()
+	local pos = uint == 3 and net.ReadVector() or victim:GetPos()
+
 	local _, vmax = victim:GetCollisionBounds()
 	pos.z = pos.z + vmax.z + RemapValClamped(
 			pos:DistToSqr(attacker:GetPos()),

@@ -288,18 +288,30 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 	if combattext_on then
 		if hidetext then
-			net.WriteBool(true)
+			net.WriteUInt(0, 2)
 		else
-			net.WriteBool(false)
-
 			local idx = victim:EntIndex()
 
 			-- use only 1-7 bits for players, use 16 bits for npcs
 			if idx > 0 and idx <= maxplayers then
-				net.WriteBool(true)
-				net.WriteUInt(idx - 1, maxplayers_bits)
+				if TTT2
+					and victim.Alive
+					and not victim:Alive()
+					and victim.lastDeathPosition
+				then
+					net.WriteUInt(3, 2)
+
+					net.WriteUInt(idx - 1, maxplayers_bits)
+
+					net.WriteVector(victim.lastDeathPosition)
+				else
+					net.WriteUInt(2, 2)
+
+					net.WriteUInt(idx - 1, maxplayers_bits)
+				end
 			else
-				net.WriteBool(false)
+				net.WriteUInt(1, 2)
+
 				net.WriteEntity(victim)
 			end
 
