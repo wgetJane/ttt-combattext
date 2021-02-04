@@ -111,7 +111,10 @@ ttt_dingaling = {
 ttt_dingaling_file = {
 	"ttt_combattext/hitsound.ogg", "#ttt_combattext.hitsound.file_desc",
 	function(name, old, new)
-		dingaling_file = new
+		dingaling_file =
+			file.Exists("sound/" .. new, "GAME")
+			and new
+			or nil
 	end
 },
 ttt_dingaling_volume = {
@@ -143,7 +146,10 @@ ttt_dingaling_lasthit = {
 ttt_dingaling_lasthit_file = {
 	"ttt_combattext/killsound.ogg", "#ttt_combattext.killsound.file_desc",
 	function(name, old, new)
-		dingaling_lasthit_file = new
+		dingaling_lasthit_file =
+			file.Exists("sound/" .. new, "GAME")
+			and new
+			or nil
 	end
 },
 ttt_dingaling_lasthit_volume = {
@@ -194,6 +200,31 @@ local function RemapValClamped(val, a, b, c, d)
 	return c + (d - c) * math.min(math.max((val - a) / (b - a), 0), 1)
 end
 
+local function playhitsound(damage, lasthit, ent)
+	local file, volume, pitchmin, pitchmax
+
+	if lasthit then
+		file = dingaling_lasthit_file
+		volume = dingaling_lasthit_volume
+		pitchmin = dingaling_lasthit_pitchmindmg
+		pitchmax = dingaling_lasthit_pitchmaxdmg
+	else
+		file = dingaling_file
+		volume = dingaling_volume
+		pitchmin = dingaling_pitchmindmg
+		pitchmax = dingaling_pitchmaxdmg
+	end
+
+	local pitch = pitchmin == pitchmax and pitchmin
+		or RemapValClamped(damage, 0, 150, pitchmin, pitchmax)
+
+	if not file then
+		return
+	end
+
+	(ent or Entity(0)):EmitSound(file, 0, pitch, volume, CHAN_STATIC)
+end
+
 local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
 
 local head, tail
@@ -214,24 +245,7 @@ net.Receive("ttt_combattext", function()
 	end
 
 	if dingaling or lasthit then
-		local file, volume, pitchmin, pitchmax
-
-		if lasthit then
-			file = dingaling_lasthit_file
-			volume = dingaling_lasthit_volume
-			pitchmin = dingaling_lasthit_pitchmindmg
-			pitchmax = dingaling_lasthit_pitchmaxdmg
-		else
-			file = dingaling_file
-			volume = dingaling_volume
-			pitchmin = dingaling_pitchmindmg
-			pitchmax = dingaling_pitchmaxdmg
-		end
-
-		local pitch = pitchmin == pitchmax and pitchmin
-			or RemapValClamped(damage, 0, 150, pitchmin, pitchmax)
-
-		attacker:EmitSound(file, 0, pitch, volume, CHAN_STATIC)
+		playhitsound(damage, lasthit, attacker)
 	end
 
 	if not combattext then
@@ -448,6 +462,99 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 	d = f:TextEntry("#ttt_combattext.hitsound.file", "ttt_dingaling_file")
 	d:SetTooltip("#ttt_combattext.hitsound.file_desc")
+	local extensions = {
+		wav = true,
+		ogg = true,
+		mp3 = true,
+	}
+	local maxresults = math.huge
+	local cache = {}
+	local function GetAutoComplete(self, val)
+		if cache[val] then
+			return cache[val]
+		end
+
+		local autocomp
+		local autocomp_len = 0
+
+		local sep = val:find("/", 1, true) and "/"
+			or val:find("\\", 1, true) and "\\"
+			or "/"--package.config[1]
+
+		val = val:lower():gsub("[/\\]+", sep):gsub("^[/\\]", "")
+
+		local sounded = "sound" .. sep .. val
+
+		local files, dirs = file.Find(sounded, "GAME")
+
+		local basename = val:match("[^/\\]+$") or ""
+
+		local dupe
+		if dirs and dirs[1] == basename then
+			autocomp = {val .. sep}
+			autocomp_len = 1
+
+			dupe = basename
+		elseif files and files[1] == basename
+			and extensions[basename:match("%.([^%.]+)$") or ""]
+		then
+			autocomp = {val}
+			autocomp_len = 1
+
+			dupe = basename
+		end
+
+		files, dirs = file.Find(sounded .. "*", "GAME")
+
+		local curdir = val:match("^.+[/\\]") or ""
+
+		local basename_pattern = "^" .. basename:PatternSafe()
+
+		if dirs then
+			for i = 1, #dirs do
+				if autocomp_len >= maxresults then
+					break
+				end
+
+				local dirname = dirs[i]
+
+				if dirname:find(basename_pattern)
+					and dirname ~= dupe
+				then
+					autocomp_len = autocomp_len + 1
+
+					autocomp = autocomp or {}
+
+					autocomp[autocomp_len] = curdir .. dirname .. sep
+				end
+			end
+		end
+
+		if files then
+			for i = 1, #files do
+				if autocomp_len >= maxresults then
+					break
+				end
+
+				local filename = files[i]
+
+				if extensions[filename:match("%.([^%.]+)$") or ""]
+					and filename ~= dupe
+				then
+					autocomp_len = autocomp_len + 1
+
+					autocomp = autocomp or {}
+
+					autocomp[autocomp_len] = curdir .. filename
+				end
+			end
+		end
+
+		cache[val] = autocomp
+
+		return autocomp
+	end
+	d.GetAutoComplete = GetAutoComplete
 
 	d = f:NumSlider("#ttt_combattext.hitsound.volume", "ttt_dingaling_volume", 0, 1, 2)
 	d.Label:SetWrap(true)
@@ -463,22 +570,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 	d = f:Button("#ttt_combattext.hitsound.play")
 	function d:OnDepressed()
-		local ply = LocalPlayer()
-
-		if not IsValid(ply)
-			and not file.Exists("sounds/" .. dingaling_file, "GAME")
-		then
-			return
-		end
-
-		ply:EmitSound(
-			dingaling_file, 0,
-			RemapValClamped(
-				math.random(0, 150), 0, 150,
-				dingaling_pitchmindmg, dingaling_pitchmaxdmg
-			),
-			dingaling_volume, CHAN_STATIC
-		)
+		playhitsound(math.random(0, 150), false)
 	end
 
 	dsettings:AddItem(f)
@@ -491,6 +583,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 	d = f:TextEntry("#ttt_combattext.killsound.file", "ttt_dingaling_lasthit_file")
 	d:SetTooltip("#ttt_combattext.killsound.file_desc")
+	d.GetAutoComplete = GetAutoComplete
 
 	d = f:NumSlider("#ttt_combattext.killsound.volume", "ttt_dingaling_lasthit_volume", 0, 1, 2)
 	d.Label:SetWrap(true)
@@ -506,22 +599,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 	d = f:Button("#ttt_combattext.killsound.play")
 	function d:OnDepressed()
-		local ply = LocalPlayer()
-
-		if not IsValid(ply)
-			and not file.Exists("sounds/" .. dingaling_lasthit_file, "GAME")
-		then
-			return
-		end
-
-		ply:EmitSound(
-			dingaling_lasthit_file, 0,
-			RemapValClamped(
-				math.random(0, 150), 0, 150,
-				dingaling_lasthit_pitchmindmg, dingaling_lasthit_pitchmaxdmg
-			),
-			dingaling_lasthit_volume, CHAN_STATIC
-		)
+		playhitsound(math.random(0, 150), true)
 	end
 
 	dsettings:AddItem(f)
