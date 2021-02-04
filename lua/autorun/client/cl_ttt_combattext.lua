@@ -53,7 +53,7 @@ end
 local updatefont
 for k, v in pairs({
 ttt_combattext = {
-	1, "Display damage numbers",
+	1, "#ttt_combattext.dmgtext.enable_desc",
 	function(name, old, new)
 		combattext = tonumber(new) == 1
 		updateuserinfo()
@@ -61,47 +61,47 @@ ttt_combattext = {
 	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
 ttt_combattext_batching_window = {
-	0.3, "Maximum delay between damage events in order to batch numbers, set to 0 to disable",
+	0.3, "#ttt_combattext.dmgtext.batch_desc",
 	function(name, old, new)
 		combattext_batching_window = tonumber(new) or 0.3
 	end
 },
 ttt_combattext_font = {
-	"Arial", "Font face used for damage numbers",
+	"Arial", "#ttt_combattext.dmgtext.font_desc",
 	function(name, old, new)
 		combattext_font = new
 		updatefont = true
 	end
 },
 ttt_combattext_color = {
-	"ffff00", "Color of damage numbers in hex format: RRGGBBAA",
+	"ffff00", "#ttt_combattext.dmgtext.color_desc",
 	function(name, old, new)
 		combattext_r, combattext_g, combattext_b, combattext_a = hex2rgb(new)
 	end
 },
 ttt_combattext_scale = {
-	1.0, "Size of damage numbers",
+	1.0, "#ttt_combattext.dmgtext.scale_desc",
 	function(name, old, new)
 		combattext_scale = tonumber(new) or 1.0
 		updatefont = true
 	end
 },
 ttt_combattext_outline = {
-	1, "Draw damage numbers with outlines",
+	1, "#ttt_combattext.dmgtext.outline_desc",
 	function(name, old, new)
 		combattext_outline = tonumber(new) == 1
 		updatefont = true
 	end
 },
 ttt_combattext_antialias = {
-	0, "Draw damage numbers with smooth text",
+	0, "#ttt_combattext.dmgtext.antialias_desc",
 	function(name, old, new)
 		combattext_antialias = tonumber(new) == 1
 		updatefont = true
 	end
 },
 ttt_dingaling = {
-	0, "Play a sound whenever you damage an enemy",
+	0, "#ttt_combattext.hitsound.enable_desc",
 	function(name, old, new)
 		dingaling = tonumber(new) == 1
 		updateuserinfo()
@@ -109,31 +109,31 @@ ttt_dingaling = {
 	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
 ttt_dingaling_file = {
-	"ttt_combattext/hitsound.ogg", "The sound file to play on hit",
+	"ttt_combattext/hitsound.ogg", "#ttt_combattext.hitsound.file_desc",
 	function(name, old, new)
 		dingaling_file = new
 	end
 },
 ttt_dingaling_volume = {
-	0.75, "Desired volume of the hit sound",
+	0.75, "#ttt_combattext.hitsound.volume_desc",
 	function(name, old, new)
 		dingaling_volume = tonumber(new) or 0.75
 	end
 },
 ttt_dingaling_pitchmaxdmg = {
-	50, "Desired pitch of the hit sound when a maximum damage hit (150 damage) is done",
+	50, "#ttt_combattext.hitsound.pitchmax_desc",
 	function(name, old, new)
 		dingaling_pitchmaxdmg = math.Clamp(tonumber(new) or 50, 0, 255)
 	end
 },
 ttt_dingaling_pitchmindmg = {
-	100, "Desired pitch of the hit sound when a minimal damage hit (0 damage) is done",
+	100, "#ttt_combattext.hitsound.pitchmin_desc",
 	function(name, old, new)
 		dingaling_pitchmindmg = math.Clamp(tonumber(new) or 100, 0, 255)
 	end
 },
 ttt_dingaling_lasthit = {
-	0, "Play a sound whenever you kill an enemy",
+	0, "#ttt_combattext.killsound.enable_desc",
 	function(name, old, new)
 		dingaling_lasthit = tonumber(new) == 1
 		updateuserinfo()
@@ -141,32 +141,32 @@ ttt_dingaling_lasthit = {
 	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
 ttt_dingaling_lasthit_file = {
-	"ttt_combattext/killsound.ogg", "The sound file to play on kill",
+	"ttt_combattext/killsound.ogg", "#ttt_combattext.killsound.file_desc",
 	function(name, old, new)
 		dingaling_lasthit_file = new
 	end
 },
 ttt_dingaling_lasthit_volume = {
-	0.75, "Desired volume of the last hit sound",
+	0.75, "#ttt_combattext.killsound.volume_desc",
 	function(name, old, new)
 		dingaling_lasthit_volume = tonumber(new) or 0.75
 	end
 },
 ttt_dingaling_lasthit_pitchmaxdmg = {
-	50, "Desired pitch of the last hit sound when a maximum damage hit (150 damage) is done",
+	50, "#ttt_combattext.killsound.pitchmax_desc",
 	function(name, old, new)
 		dingaling_lasthit_pitchmaxdmg = math.Clamp(tonumber(new) or 50, 0, 255)
 	end
 },
 ttt_dingaling_lasthit_pitchmindmg = {
-	100, "Desired pitch of the last hit sound when a minimal damage hit (0 damage) is done",
+	100, "#ttt_combattext.killsound.pitchmin_desc",
 	function(name, old, new)
 		dingaling_lasthit_pitchmindmg = math.Clamp(tonumber(new) or 100, 0, 255)
 	end
 },
 }) do
 	v[3](k, nil,
-		CreateConVar(k, v[1], v[4] or FCVAR_ARCHIVE, v[2]):GetString()
+		CreateConVar(k, v[1], v[4] or FCVAR_ARCHIVE, language.GetPhrase(v[2])):GetString()
 	)
 	cvars.AddChangeCallback(k, v[3])
 end
@@ -376,25 +376,25 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 	local f, d
 
 	f = vgui.Create("DForm", dsettings)
-	f:SetName("Damage text")
+	f:SetName("#ttt_combattext.dmgtext.title")
 
-	d = f:CheckBox("Enable damage text", "ttt_combattext")
-	d:SetTooltip(GetConVar("ttt_combattext"):GetHelpText())
+	d = f:CheckBox("#ttt_combattext.dmgtext.enable", "ttt_combattext")
+	d:SetTooltip("#ttt_combattext.dmgtext.enable_desc")
 
-	d = f:NumSlider("Damage text batching", "ttt_combattext_batching_window", 0, 2, 2)
+	d = f:NumSlider("#ttt_combattext.dmgtext.batch", "ttt_combattext_batching_window", 0, 2, 2)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_combattext_batching_window"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.dmgtext.batch_desc")
 
-	d = f:TextEntry("Text font name", "ttt_combattext_font")
-	d:SetTooltip(GetConVar("ttt_combattext_font"):GetHelpText())
+	d = f:TextEntry("#ttt_combattext.dmgtext.font", "ttt_combattext_font")
+	d:SetTooltip("#ttt_combattext.dmgtext.font_desc")
 
 	local dhex, dmix
 	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
 	local col = Color(r, g, b, a)
 	local lock
 
-	dhex = f:TextEntry("Text color", "ttt_combattext_color")
-	dhex:SetTooltip(GetConVar("ttt_combattext_color"):GetHelpText())
+	dhex = f:TextEntry("#ttt_combattext.dmgtext.color", "ttt_combattext_color")
+	dhex:SetTooltip("#ttt_combattext.dmgtext.color_desc")
 	dhex:SetValue(rgb2hex(r, g, b, a))
 	dhex:SetUpdateOnType(true)
 	function dhex:AllowInput(char)
@@ -428,40 +428,40 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 	end
 	f:AddItem(dmix)
 
-	d = f:NumSlider("Text scale", "ttt_combattext_scale", 0, 3, 2)
+	d = f:NumSlider("#ttt_combattext.dmgtext.scale", "ttt_combattext_scale", 0, 3, 2)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_combattext_scale"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.dmgtext.scale_desc")
 
-	d = f:CheckBox("Text outline", "ttt_combattext_outline")
-	d:SetTooltip(GetConVar("ttt_combattext_outline"):GetHelpText())
+	d = f:CheckBox("#ttt_combattext.dmgtext.outline", "ttt_combattext_outline")
+	d:SetTooltip("#ttt_combattext.dmgtext.outline_desc")
 
-	d = f:CheckBox("Text anti-aliasing", "ttt_combattext_antialias")
-	d:SetTooltip(GetConVar("ttt_combattext_antialias"):GetHelpText())
+	d = f:CheckBox("#ttt_combattext.dmgtext.antialias", "ttt_combattext_antialias")
+	d:SetTooltip("#ttt_combattext.dmgtext.antialias_desc")
 
 	dsettings:AddItem(f)
 
 	f = vgui.Create("DForm", dsettings)
-	f:SetName("Hit sound")
+	f:SetName("#ttt_combattext.hitsound.title")
 
-	d = f:CheckBox("Enable hit sound", "ttt_dingaling")
-	d:SetTooltip(GetConVar("ttt_dingaling"):GetHelpText())
+	d = f:CheckBox("#ttt_combattext.hitsound.enable", "ttt_dingaling")
+	d:SetTooltip("#ttt_combattext.hitsound.enable_desc")
 
-	d = f:TextEntry("Sound file", "ttt_dingaling_file")
-	d:SetTooltip(GetConVar("ttt_dingaling_file"):GetHelpText())
+	d = f:TextEntry("#ttt_combattext.hitsound.file", "ttt_dingaling_file")
+	d:SetTooltip("#ttt_combattext.hitsound.file_desc")
 
-	d = f:NumSlider("Sound volume", "ttt_dingaling_volume", 0, 1, 2)
+	d = f:NumSlider("#ttt_combattext.hitsound.volume", "ttt_dingaling_volume", 0, 1, 2)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_dingaling_volume"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.hitsound.volume_desc")
 
-	d = f:NumSlider("High damage pitch", "ttt_dingaling_pitchmaxdmg", 0, 200, 0)
+	d = f:NumSlider("#ttt_combattext.hitsound.pitchmax", "ttt_dingaling_pitchmaxdmg", 0, 200, 0)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_dingaling_pitchmaxdmg"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.hitsound.pitchmax_desc")
 
-	d = f:NumSlider("Low damage pitch", "ttt_dingaling_pitchmindmg", 0, 200, 0)
+	d = f:NumSlider("#ttt_combattext.hitsound.pitchmin", "ttt_dingaling_pitchmindmg", 0, 200, 0)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_dingaling_pitchmindmg"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.hitsound.pitchmin_desc")
 
-	d = f:Button("Play hit sound")
+	d = f:Button("#ttt_combattext.hitsound.play")
 	function d:OnDepressed()
 		local ply = LocalPlayer()
 
@@ -484,27 +484,27 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 	dsettings:AddItem(f)
 
 	f = vgui.Create("DForm", dsettings)
-	f:SetName("Kill sound")
+	f:SetName("#ttt_combattext.killsound.title")
 
-	d = f:CheckBox("Enable kill sound", "ttt_dingaling_lasthit")
-	d:SetTooltip(GetConVar("ttt_dingaling_lasthit"):GetHelpText())
+	d = f:CheckBox("#ttt_combattext.killsound.enable", "ttt_dingaling_lasthit")
+	d:SetTooltip("#ttt_combattext.killsound.enable_desc")
 
-	d = f:TextEntry("Sound file", "ttt_dingaling_lasthit_file")
-	d:SetTooltip(GetConVar("ttt_dingaling_lasthit_file"):GetHelpText())
+	d = f:TextEntry("#ttt_combattext.killsound.file", "ttt_dingaling_lasthit_file")
+	d:SetTooltip("#ttt_combattext.killsound.file_desc")
 
-	d = f:NumSlider("Sound volume", "ttt_dingaling_lasthit_volume", 0, 1, 2)
+	d = f:NumSlider("#ttt_combattext.killsound.volume", "ttt_dingaling_lasthit_volume", 0, 1, 2)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_dingaling_lasthit_volume"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.killsound.volume_desc")
 
-	d = f:NumSlider("High damage pitch", "ttt_dingaling_lasthit_pitchmaxdmg", 0, 200, 0)
+	d = f:NumSlider("#ttt_combattext.killsound.pitchmax", "ttt_dingaling_lasthit_pitchmaxdmg", 0, 200, 0)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_dingaling_lasthit_pitchmaxdmg"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.killsound.pitchmax_desc")
 
-	d = f:NumSlider("Low damage pitch", "ttt_dingaling_lasthit_pitchmindmg", 0, 200, 0)
+	d = f:NumSlider("#ttt_combattext.killsound.pitchmin", "ttt_dingaling_lasthit_pitchmindmg", 0, 200, 0)
 	d.Label:SetWrap(true)
-	d:SetTooltip(GetConVar("ttt_dingaling_lasthit_pitchmindmg"):GetHelpText())
+	d:SetTooltip("#ttt_combattext.killsound.pitchmin_desc")
 
-	d = f:Button("Play kill sound")
+	d = f:Button("#ttt_combattext.killsound.play")
 	function d:OnDepressed()
 		local ply = LocalPlayer()
 
@@ -526,37 +526,38 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 	dsettings:AddItem(f)
 
-	if ConVarExists("ttt_combattext_bodyarmor") then
+	if ConVarExists("ttt_combattext_bodyarmor") then -- listen server
 		f = vgui.Create("DForm", dsettings)
-		f:SetName("Server settings")
+		f:SetName("#ttt_combattext.server.title")
 
-		d = f:ComboBox("Hide body armor", "ttt_combattext_bodyarmor")
-		d:SetTooltip("Prevent damage text from revealing if the target is wearing body armor")
+		d = f:ComboBox("#ttt_combattext.server.bodyarmor", "ttt_combattext_bodyarmor")
+		d:SetTooltip("#ttt_combattext.server.bodyarmor_desc")
 		d:SetSortItems(false)
-		d:AddChoice("Disabled", 0)
-		d:AddChoice("Enabled except againt detectives and fellow traitors", 1)
-		d:AddChoice("Enabled with no exceptions", 2)
+		d:AddChoice("#ttt_combattext.server.bodyarmor_choice0", 0)
+		d:AddChoice("#ttt_combattext.server.bodyarmor_choice1", 1)
+		d:AddChoice("#ttt_combattext.server.bodyarmor_choice2", 2)
 
-		d = f:ComboBox("Disguised targets", "ttt_combattext_disguise")
+		d = f:ComboBox("#ttt_combattext.server.disguise", "ttt_combattext_disguise")
+		d:SetTooltip("#ttt_combattext.server.bodyarmor_desc")
 		d:SetSortItems(false)
-		d:AddChoice("Show damage text", 0)
-		d:AddChoice("Don't show damage text", 1)
-		d:AddChoice("Don't show damage text and don't play hit sound", 2)
+		d:AddChoice("#ttt_combattext.server.disguise_choice0", 0)
+		d:AddChoice("#ttt_combattext.server.disguise_choice1", 1)
+		d:AddChoice("#ttt_combattext.server.disguise_choice2", 2)
 
-		d = f:CheckBox("Check line of sight", "ttt_combattext_lineofsight")
-		d:SetTooltip(GetConVar("ttt_combattext_lineofsight"):GetHelpText())
+		d = f:CheckBox("#ttt_combattext.server.lineofsight", "ttt_combattext_lineofsight")
+		d:SetTooltip("#ttt_combattext.server.lineofsight_desc")
 
-		d = f:ComboBox("Damage rounding", "ttt_combattext_rounding")
+		d = f:ComboBox("#ttt_combattext.server.rounding", "ttt_combattext_rounding")
 		d:SetSortItems(false)
-		d:AddChoice("Round down", 0)
-		d:AddChoice("Round off", 1)
-		d:AddChoice("Round up", 2)
+		d:AddChoice("#ttt_combattext.server.rounding_floor", 0)
+		d:AddChoice("#ttt_combattext.server.rounding_nearest", 1)
+		d:AddChoice("#ttt_combattext.server.rounding_ceiling", 2)
 
-		d = f:CheckBox("Allow kill sounds", "ttt_dingaling_lasthit_allowed")
-		d:SetTooltip(GetConVar("ttt_dingaling_lasthit_allowed"):GetHelpText())
+		d = f:CheckBox("#ttt_combattext.server.killsounds", "ttt_dingaling_lasthit_allowed")
+		d:SetTooltip("#ttt_combattext.server.killsounds")
 
 		dsettings:AddItem(f)
 	end
 
-	dtabs:AddSheet("Combat text", dsettings, nil, false, false)
+	dtabs:AddSheet("#ttt_combattext.sheet.title", dsettings, nil, false, false)
 end)

@@ -1,6 +1,16 @@
 resource.AddSingleFile("sound/ttt_combattext/hitsound.ogg")
 resource.AddSingleFile("sound/ttt_combattext/killsound.ogg")
 
+for _, v in pairs(select(2, file.Find("resource/localization/*", "GAME"))) do
+	local filename = (
+		"resource/localization/%s/ttt_combattext.properties"
+	):format(v)
+
+	if file.Exists(filename, "GAME") then
+		resource.AddSingleFile(filename)
+	end
+end
+
 util.AddNetworkString("ttt_combattext")
 
 local combattext_bodyarmor = CreateConVar("ttt_combattext_bodyarmor", 1,
