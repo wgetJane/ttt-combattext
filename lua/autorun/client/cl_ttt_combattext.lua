@@ -15,6 +15,7 @@ local dingaling_lasthit_file = "ttt_combattext/killsound.ogg"
 local dingaling_lasthit_volume = 0.75
 local dingaling_lasthit_pitchmaxdmg = 50
 local dingaling_lasthit_pitchmindmg = 100
+local dingaling_IGModAudioChannel = true
 
 local function hex2rgb(hex)
 	local r, g, b, a = 0, 0, 0, 255
@@ -48,15 +49,17 @@ local function rgb2hex(r, g, b, a)
 	end
 end
 
-local function updateuserinfo()
-end
-local updatefont
+local updateuserinfo, updatefont
+local dingaling_chan, dingaling_lasthit_chan
 for k, v in pairs({
 ttt_combattext = {
 	1, "#ttt_combattext.dmgtext.enable_desc",
 	function(name, old, new)
 		combattext = tonumber(new) == 1
-		updateuserinfo()
+
+		if updateuserinfo then
+			updateuserinfo()
+		end
 	end,
 	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
@@ -70,6 +73,7 @@ ttt_combattext_font = {
 	"Arial", "#ttt_combattext.dmgtext.font_desc",
 	function(name, old, new)
 		combattext_font = new
+
 		updatefont = true
 	end
 },
@@ -83,6 +87,7 @@ ttt_combattext_scale = {
 	1.0, "#ttt_combattext.dmgtext.scale_desc",
 	function(name, old, new)
 		combattext_scale = tonumber(new) or 1.0
+
 		updatefont = true
 	end
 },
@@ -90,6 +95,7 @@ ttt_combattext_outline = {
 	1, "#ttt_combattext.dmgtext.outline_desc",
 	function(name, old, new)
 		combattext_outline = tonumber(new) == 1
+
 		updatefont = true
 	end
 },
@@ -97,6 +103,7 @@ ttt_combattext_antialias = {
 	0, "#ttt_combattext.dmgtext.antialias_desc",
 	function(name, old, new)
 		combattext_antialias = tonumber(new) == 1
+
 		updatefont = true
 	end
 },
@@ -104,7 +111,10 @@ ttt_dingaling = {
 	0, "#ttt_combattext.hitsound.enable_desc",
 	function(name, old, new)
 		dingaling = tonumber(new) == 1
-		updateuserinfo()
+
+		if updateuserinfo then
+			updateuserinfo()
+		end
 	end,
 	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
@@ -115,12 +125,25 @@ ttt_dingaling_file = {
 			file.Exists("sound/" .. new, "GAME")
 			and new
 			or nil
+
+		if dingaling_IGModAudioChannel
+			and dingaling_file
+			and dingaling_chan
+		then
+			dingaling_chan = nil
+		end
 	end
 },
 ttt_dingaling_volume = {
 	0.75, "#ttt_combattext.hitsound.volume_desc",
 	function(name, old, new)
 		dingaling_volume = tonumber(new) or 0.75
+
+		if dingaling_IGModAudioChannel
+			and IsValid(dingaling_chan)
+		then
+			dingaling_chan:SetVolume(dingaling_volume)
+		end
 	end
 },
 ttt_dingaling_pitchmaxdmg = {
@@ -139,7 +162,10 @@ ttt_dingaling_lasthit = {
 	0, "#ttt_combattext.killsound.enable_desc",
 	function(name, old, new)
 		dingaling_lasthit = tonumber(new) == 1
-		updateuserinfo()
+
+		if updateuserinfo then
+			updateuserinfo()
+		end
 	end,
 	FCVAR_ARCHIVE + FCVAR_USERINFO
 },
@@ -150,12 +176,25 @@ ttt_dingaling_lasthit_file = {
 			file.Exists("sound/" .. new, "GAME")
 			and new
 			or nil
+
+		if dingaling_IGModAudioChannel
+			and dingaling_lasthit_file
+			and dingaling_lasthit_chan
+		then
+			dingaling_lasthit_chan = nil
+		end
 	end
 },
 ttt_dingaling_lasthit_volume = {
 	0.75, "#ttt_combattext.killsound.volume_desc",
 	function(name, old, new)
 		dingaling_lasthit_volume = tonumber(new) or 0.75
+
+		if dingaling_IGModAudioChannel
+			and IsValid(dingaling_lasthit_chan)
+		then
+			dingaling_lasthit_chan:SetVolume(dingaling_lasthit_volume)
+		end
 	end
 },
 ttt_dingaling_lasthit_pitchmaxdmg = {
@@ -170,13 +209,22 @@ ttt_dingaling_lasthit_pitchmindmg = {
 		dingaling_lasthit_pitchmindmg = math.Clamp(tonumber(new) or 100, 0, 255)
 	end
 },
+ttt_dingaling_IGModAudioChannel = {
+	0, "#ttt_combattext.hitsound.IGModAudioChannel",
+	function(name, old, new)
+		dingaling_IGModAudioChannel = tonumber(new) == 1
+	end
+},
 }) do
 	v[3](k, nil,
-		CreateConVar(k, v[1], v[4] or FCVAR_ARCHIVE, language.GetPhrase(v[2])):GetString()
+		CreateConVar(
+			k, v[1], v[4] or FCVAR_ARCHIVE, language.GetPhrase(v[2])
+		):GetString()
 	)
+
 	cvars.AddChangeCallback(k, v[3])
 end
-updateuserinfo = function()
+function updateuserinfo()
 	net.Start("ttt_combattext")
 	net.SendToServer()
 end
@@ -194,7 +242,6 @@ local function updatefontfn()
 	fontdata.size = fontdata.size * (4 / 3)
 	surface.CreateFont("ttt_combattext_font_headshot", fontdata)
 end
-updatefontfn()
 
 local function RemapValClamped(val, a, b, c, d)
 	return c + (d - c) * math.min(math.max((val - a) / (b - a), 0), 1)
@@ -222,7 +269,46 @@ local function playhitsound(damage, lasthit, ent)
 		return
 	end
 
-	(ent or Entity(0)):EmitSound(file, 0, pitch, volume, CHAN_STATIC)
+	if not dingaling_IGModAudioChannel then
+		return (ent or Entity(0)):EmitSound(
+			file, 0, pitch, volume, CHAN_STATIC
+		)
+	end
+
+	pitch = pitch * 0.01
+
+	local chan
+	if lasthit then
+		chan = dingaling_lasthit_chan
+	else
+		chan = dingaling_chan
+	end
+
+	if IsValid(chan) then
+		chan:SetPlaybackRate(pitch)
+
+		if chan:GetState() == GMOD_CHANNEL_PLAYING then
+			return chan:SetTime(0)
+		end
+
+		return chan:Play()
+	end
+
+	return sound.PlayFile("sound/" .. file, "noplay noblock", function(chan)
+		if not chan then
+			return
+		end
+
+		chan:SetVolume(volume)
+		chan:SetPlaybackRate(pitch)
+		chan:Play()
+
+		if lasthit then
+			dingaling_lasthit_chan = chan
+		else
+			dingaling_chan = chan
+		end
+	end)
 end
 
 local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
@@ -438,7 +524,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 			return
 		end
 
-		dhex:ConVarChanged(rgb2hex(col.r, col.g, col.b, col.a)) -- inefficient
+		return dhex:ConVarChanged(rgb2hex(col.r, col.g, col.b, col.a)) -- inefficient
 	end
 	f:AddItem(dmix)
 
@@ -462,15 +548,19 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 	d = f:TextEntry("#ttt_combattext.hitsound.file", "ttt_dingaling_file")
 	d:SetTooltip("#ttt_combattext.hitsound.file_desc")
-	local extensions = {
+	local exts = {
 		wav = true,
 		ogg = true,
 		mp3 = true,
 	}
 	local maxresults = math.huge
-	local cache = {}
+	local cache, audchan
 	local function GetAutoComplete(self, val)
-		if cache[val] then
+		if audchan ~= dingaling_IGModAudioChannel then
+			audchan = dingaling_IGModAudioChannel
+
+			cache = cache and #cache == 0 and cache or {}
+		elseif cache[val] then
 			return cache[val]
 		end
 
@@ -496,7 +586,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 			dupe = basename
 		elseif files and files[1] == basename
-			and extensions[basename:match("%.([^%.]+)$") or ""]
+			and (audchan or exts[basename:match("%.([^%.]+)$") or ""])
 		then
 			autocomp = {val}
 			autocomp_len = 1
@@ -538,7 +628,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 				local filename = files[i]
 
-				if extensions[filename:match("%.([^%.]+)$") or ""]
+				if (audchan or exts[filename:match("%.([^%.]+)$") or ""])
 					and filename ~= dupe
 				then
 					autocomp_len = autocomp_len + 1
@@ -568,9 +658,12 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 	d.Label:SetWrap(true)
 	d:SetTooltip("#ttt_combattext.hitsound.pitchmin_desc")
 
+	d = f:CheckBox("#ttt_combattext.hitsound.IGModAudioChannel", "ttt_dingaling_IGModAudioChannel")
+	d:SetTooltip("#ttt_combattext.hitsound.IGModAudioChannel_desc")
+
 	d = f:Button("#ttt_combattext.hitsound.play")
 	function d:OnDepressed()
-		playhitsound(math.random(0, 150), false)
+		return playhitsound(math.random(0, 150), false)
 	end
 
 	dsettings:AddItem(f)
@@ -599,7 +692,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 	d = f:Button("#ttt_combattext.killsound.play")
 	function d:OnDepressed()
-		playhitsound(math.random(0, 150), true)
+		return playhitsound(math.random(0, 150), true)
 	end
 
 	dsettings:AddItem(f)
