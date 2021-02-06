@@ -42,85 +42,86 @@ local function hex2rgb(hex)
 end
 
 local function rgb2hex(r, g, b, a)
-	if a < 255 then
-		return ("%02x%02x%02x%02x"):format(r, g, b, a)
-	else
-		return ("%02x%02x%02x"):format(r, g, b)
-	end
+	return (
+		a < 255 and "%02x%02x%02x%02x"
+		or "%02x%02x%02x"
+	):format(r, g, b, a)
 end
 
 local updateuserinfo, updatefont
 local dingaling_chan, dingaling_lasthit_chan
-for k, v in pairs({
-ttt_combattext = {
-	1, "#ttt_combattext.dmgtext.enable_desc",
-	function(name, old, new)
+local tkpfx, cvpfx
+for _, v in ipairs({
+{
+	"combattext", 1,
+	function(_,_, new)
 		combattext = tonumber(new) == 1
 
 		if updateuserinfo then
 			updateuserinfo()
 		end
 	end,
-	FCVAR_ARCHIVE + FCVAR_USERINFO
+	"dmgtext", true
 },
-ttt_combattext_batching_window = {
-	0.3, "#ttt_combattext.dmgtext.batch_desc",
-	function(name, old, new)
+{
+	"batching_window", 0.3,
+	function(_,_, new)
 		combattext_batching_window = tonumber(new) or 0.3
-	end
+	end,
+	"batch_desc"
 },
-ttt_combattext_font = {
-	"Arial", "#ttt_combattext.dmgtext.font_desc",
-	function(name, old, new)
+{
+	"font", combattext_font,
+	function(_,_, new)
 		combattext_font = new
 
 		updatefont = true
 	end
 },
-ttt_combattext_color = {
-	"ffff00", "#ttt_combattext.dmgtext.color_desc",
-	function(name, old, new)
+{
+	"color", "ffff00",
+	function(_,_, new)
 		combattext_r, combattext_g, combattext_b, combattext_a = hex2rgb(new)
 	end
 },
-ttt_combattext_scale = {
-	1.0, "#ttt_combattext.dmgtext.scale_desc",
-	function(name, old, new)
+{
+	"scale", 1.0,
+	function(_,_, new)
 		combattext_scale = tonumber(new) or 1.0
 
 		updatefont = true
 	end
 },
-ttt_combattext_outline = {
-	1, "#ttt_combattext.dmgtext.outline_desc",
-	function(name, old, new)
+{
+	"outline", 1,
+	function(_,_, new)
 		combattext_outline = tonumber(new) == 1
 
 		updatefont = true
 	end
 },
-ttt_combattext_antialias = {
-	0, "#ttt_combattext.dmgtext.antialias_desc",
-	function(name, old, new)
+{
+	"antialias", 0,
+	function(_,_, new)
 		combattext_antialias = tonumber(new) == 1
 
 		updatefont = true
 	end
 },
-ttt_dingaling = {
-	0, "#ttt_combattext.hitsound.enable_desc",
-	function(name, old, new)
+{
+	"dingaling", 0,
+	function(_,_, new)
 		dingaling = tonumber(new) == 1
 
 		if updateuserinfo then
 			updateuserinfo()
 		end
 	end,
-	FCVAR_ARCHIVE + FCVAR_USERINFO
+	"hitsound", true
 },
-ttt_dingaling_file = {
-	"ttt_combattext/hitsound.ogg", "#ttt_combattext.hitsound.file_desc",
-	function(name, old, new)
+{
+	"file", dingaling_file,
+	function(_,_, new)
 		dingaling_file =
 			file.Exists("sound/" .. new, "GAME")
 			and new
@@ -134,9 +135,9 @@ ttt_dingaling_file = {
 		end
 	end
 },
-ttt_dingaling_volume = {
-	0.75, "#ttt_combattext.hitsound.volume_desc",
-	function(name, old, new)
+{
+	"volume", 0.75,
+	function(_,_, new)
 		dingaling_volume = tonumber(new) or 0.75
 
 		if dingaling_IGModAudioChannel
@@ -146,32 +147,47 @@ ttt_dingaling_volume = {
 		end
 	end
 },
-ttt_dingaling_pitchmaxdmg = {
-	50, "#ttt_combattext.hitsound.pitchmax_desc",
-	function(name, old, new)
-		dingaling_pitchmaxdmg = math.Clamp(tonumber(new) or 50, 0, 255)
-	end
+{
+	"pitchmaxdmg", 50,
+	function(_,_, new)
+		dingaling_pitchmaxdmg = math.Clamp(
+			tonumber(new) or 50,
+			0, 255
+		)
+	end,
+	"pitchmax_desc"
 },
-ttt_dingaling_pitchmindmg = {
-	100, "#ttt_combattext.hitsound.pitchmin_desc",
-	function(name, old, new)
-		dingaling_pitchmindmg = math.Clamp(tonumber(new) or 100, 0, 255)
-	end
+{
+	"pitchmindmg", 100,
+	function(_,_, new)
+		dingaling_pitchmindmg = math.Clamp(
+			tonumber(new) or 100,
+			0, 255
+		)
+	end,
+	"pitchmin_desc"
 },
-ttt_dingaling_lasthit = {
-	0, "#ttt_combattext.killsound.enable_desc",
-	function(name, old, new)
+{
+	"IGModAudioChannel", 0,
+	function(_,_, new)
+		dingaling_IGModAudioChannel = tonumber(new) == 1
+	end,
+	"IGModAudioChannel"
+},
+{
+	"dingaling_lasthit", 0,
+	function(_,_, new)
 		dingaling_lasthit = tonumber(new) == 1
 
 		if updateuserinfo then
 			updateuserinfo()
 		end
 	end,
-	FCVAR_ARCHIVE + FCVAR_USERINFO
+	"killsound", true
 },
-ttt_dingaling_lasthit_file = {
-	"ttt_combattext/killsound.ogg", "#ttt_combattext.killsound.file_desc",
-	function(name, old, new)
+{
+	"file", dingaling_lasthit_file,
+	function(_,_, new)
 		dingaling_lasthit_file =
 			file.Exists("sound/" .. new, "GAME")
 			and new
@@ -185,9 +201,9 @@ ttt_dingaling_lasthit_file = {
 		end
 	end
 },
-ttt_dingaling_lasthit_volume = {
-	0.75, "#ttt_combattext.killsound.volume_desc",
-	function(name, old, new)
+{
+	"volume", 0.75,
+	function(_,_, new)
 		dingaling_lasthit_volume = tonumber(new) or 0.75
 
 		if dingaling_IGModAudioChannel
@@ -197,32 +213,54 @@ ttt_dingaling_lasthit_volume = {
 		end
 	end
 },
-ttt_dingaling_lasthit_pitchmaxdmg = {
-	50, "#ttt_combattext.killsound.pitchmax_desc",
-	function(name, old, new)
-		dingaling_lasthit_pitchmaxdmg = math.Clamp(tonumber(new) or 50, 0, 255)
-	end
+{
+	"pitchmaxdmg", 50,
+	function(_,_, new)
+		dingaling_lasthit_pitchmaxdmg = math.Clamp(
+			tonumber(new) or 50,
+			0, 255
+		)
+	end,
+	"pitchmax_desc"
 },
-ttt_dingaling_lasthit_pitchmindmg = {
-	100, "#ttt_combattext.killsound.pitchmin_desc",
-	function(name, old, new)
-		dingaling_lasthit_pitchmindmg = math.Clamp(tonumber(new) or 100, 0, 255)
-	end
-},
-ttt_dingaling_IGModAudioChannel = {
-	0, "#ttt_combattext.hitsound.IGModAudioChannel",
-	function(name, old, new)
-		dingaling_IGModAudioChannel = tonumber(new) == 1
-	end
+{
+	"pitchmindmg", 100,
+	function(_,_, new)
+		dingaling_lasthit_pitchmindmg = math.Clamp(
+			tonumber(new) or 100,
+			0, 255
+		)
+	end,
+	"pitchmin_desc"
 },
 }) do
-	v[3](k, nil,
+	local fc = FCVAR_ARCHIVE
+
+	local tk, cv
+
+	if v[5] then
+		fc = fc + FCVAR_USERINFO
+
+		tkpfx, cv = "#ttt_combattext." .. v[4] .. ".", "ttt_" .. v[1]
+
+		tk = tkpfx .. "enable"
+
+		cvpfx = cv .. "_"
+	else
+		tk, cv = v[4], v[1]
+
+		tk = tkpfx .. (tk or cv .. "_desc")
+
+		cv = cvpfx .. cv
+	end
+
+	v[3](cv, "",
 		CreateConVar(
-			k, v[1], v[4] or FCVAR_ARCHIVE, language.GetPhrase(v[2])
+			cv, v[2], fc, language.GetPhrase(tk)
 		):GetString()
 	)
 
-	cvars.AddChangeCallback(k, v[3])
+	cvars.AddChangeCallback(cv, v[3])
 end
 function updateuserinfo()
 	net.Start("ttt_combattext")
@@ -466,35 +504,76 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	end
 end)
 
-hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
-	local dsettings = vgui.Create("DPanelList", dtabs)
-	dsettings:StretchToParent(0, 0, dtabs:GetPadding() * 2, 0)
-	dsettings:EnableVerticalScrollbar(true)
-	dsettings:SetPadding(10)
-	dsettings:SetSpacing(10)
+local function createsettingstab(panel, indentmixer, onaddform)
+	local f, tkpfx, cvpfx
 
-	local f, d
+	local function le(tk)
+		return "#ttt_combattext." .. tkpfx .. "." .. tk
+	end
 
-	f = vgui.Create("DForm", dsettings)
-	f:SetName("#ttt_combattext.dmgtext.title")
+	local function add(fn, tk, cv, ...)
+		cv = cv or tk
+		tk = le(tk)
 
-	d = f:CheckBox("#ttt_combattext.dmgtext.enable", "ttt_combattext")
-	d:SetTooltip("#ttt_combattext.dmgtext.enable_desc")
+		local d, lbl = f[fn](
+				f, tk,
+				"ttt_" .. cvpfx .. (cv == "" and "" or "_") .. cv,
+				...
+			)
 
-	d = f:NumSlider("#ttt_combattext.dmgtext.batch", "ttt_combattext_batching_window", 0, 2, 2)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.dmgtext.batch_desc")
+		d:SetTooltip(tk .. "_desc")
 
-	d = f:TextEntry("#ttt_combattext.dmgtext.font", "ttt_combattext_font")
-	d:SetTooltip("#ttt_combattext.dmgtext.font_desc")
+		lbl = lbl or d.Label
 
-	local dhex, dmix
+		if fn == "CheckBox" then -- hackily fix wrapping
+			local w, h = d:GetSize()
+			local lw, lh = lbl:GetSize()
+			local wdiff, hdiff = w - lw + 1, h - lh
+
+			d:SetHeight(255)
+
+			function d:PerformLayout(w)
+				self.PerformLayout = nil
+
+				local lbl = self.Label
+
+				lbl:SetWidth(w - wdiff)
+
+				function lbl.OnSizeChanged(_,_, h)
+					self:SetHeight(h + hdiff)
+				end
+
+				lbl:SetAutoStretchVertical(true)
+				lbl:SetWrap(true)
+
+				function self:OnSizeChanged(w)
+					self.Label:SetWidth(w - wdiff)
+				end
+			end
+		elseif lbl then
+			lbl:SetWrap(true)
+		end
+
+		return d, lbl
+	end
+
+	tkpfx, cvpfx = "dmgtext", "combattext"
+
+	f = vgui.Create("DForm", panel)
+	f:SetName(le("title"))
+
+	add("CheckBox", "enable", "")
+
+	add("NumSlider", "batch", "batching_window", 0, 2, 2)
+
+	add("TextEntry", "font")
+
+	local dhex, dhex_lbl, dmix
 	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
 	local col = Color(r, g, b, a)
 	local lock
 
-	dhex = f:TextEntry("#ttt_combattext.dmgtext.color", "ttt_combattext_color")
-	dhex:SetTooltip("#ttt_combattext.dmgtext.color_desc")
+	dhex, dhex_lbl = add("TextEntry", "color")
 	dhex:SetValue(rgb2hex(r, g, b, a))
 	dhex:SetUpdateOnType(true)
 	function dhex:AllowInput(char)
@@ -514,7 +593,9 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 	dmix = vgui.Create("DColorMixer")
 	dmix:SetColor(col)
 	dmix:SetHeight(92)
-	dmix:DockMargin(100, 0, 0, 0)
+	if indentmixer then
+		dmix:DockMargin(dhex_lbl:GetWide(), 0, 0, 0)
+	end
 	dmix:SetAlphaBar(true)
 	dmix:SetPalette(false)
 	dmix:SetWangs(true)
@@ -524,48 +605,39 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 			return
 		end
 
-		return dhex:ConVarChanged(rgb2hex(col.r, col.g, col.b, col.a)) -- inefficient
+		return dhex:ConVarChanged( -- inefficient
+			rgb2hex(col.r, col.g, col.b, col.a)
+		)
 	end
 	f:AddItem(dmix)
 
-	d = f:NumSlider("#ttt_combattext.dmgtext.scale", "ttt_combattext_scale", 0, 3, 2)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.dmgtext.scale_desc")
+	add("NumSlider", "scale", nil, 0, 3, 2)
 
-	d = f:CheckBox("#ttt_combattext.dmgtext.outline", "ttt_combattext_outline")
-	d:SetTooltip("#ttt_combattext.dmgtext.outline_desc")
+	add("CheckBox", "outline")
 
-	d = f:CheckBox("#ttt_combattext.dmgtext.antialias", "ttt_combattext_antialias")
-	d:SetTooltip("#ttt_combattext.dmgtext.antialias_desc")
+	add("CheckBox", "antialias")
 
-	dsettings:AddItem(f)
+	panel:AddItem(f)
+	if onaddform then
+		onaddform(f)
+	end
 
-	f = vgui.Create("DForm", dsettings)
-	f:SetName("#ttt_combattext.hitsound.title")
-
-	d = f:CheckBox("#ttt_combattext.hitsound.enable", "ttt_dingaling")
-	d:SetTooltip("#ttt_combattext.hitsound.enable_desc")
-
-	d = f:TextEntry("#ttt_combattext.hitsound.file", "ttt_dingaling_file")
-	d:SetTooltip("#ttt_combattext.hitsound.file_desc")
 	local exts = {
 		wav = true,
 		ogg = true,
 		mp3 = true,
 	}
-	local maxresults = math.huge
-	local cache, audchan
+	local cache, cachemeta = {}, {}
+	setmetatable(cache, cachemeta)
 	local function GetAutoComplete(self, val)
-		if audchan ~= dingaling_IGModAudioChannel then
-			audchan = dingaling_IGModAudioChannel
-
-			cache = cache and #cache == 0 and cache or {}
-		elseif cache[val] then
+		if cache[val] then
 			return cache[val]
 		end
 
-		local autocomp
-		local autocomp_len = 0
+		local audchan = dingaling_IGModAudioChannel
+
+		local tbl
+		local len = 0
 
 		local sep = val:find("/", 1, true) and "/"
 			or val:find("\\", 1, true) and "\\"
@@ -577,158 +649,186 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 
 		local files, dirs = file.Find(sounded, "GAME")
 
-		local basename = val:match("[^/\\]+$") or ""
+		local base = val:match("[^/\\]+$") or ""
 
 		local dupe
-		if dirs and dirs[1] == basename then
-			autocomp = {val .. sep}
-			autocomp_len = 1
+		if dirs and dirs[1] == base then
+			tbl = {val .. sep}
+			len = 1
 
-			dupe = basename
-		elseif files and files[1] == basename
-			and (audchan or exts[basename:match("%.([^%.]+)$") or ""])
+			dupe = base
+		elseif files and files[1] == base
+			and (audchan or exts[base:match("%.([^%.]+)$") or ""])
 		then
-			autocomp = {val}
-			autocomp_len = 1
+			tbl = {val}
+			len = 1
 
-			dupe = basename
+			dupe = base
 		end
 
 		files, dirs = file.Find(sounded .. "*", "GAME")
 
 		local curdir = val:match("^.+[/\\]") or ""
 
-		local basename_pattern = "^" .. basename:PatternSafe()
+		local pat = "^" .. base:PatternSafe()
 
 		if dirs then
 			for i = 1, #dirs do
-				if autocomp_len >= maxresults then
-					break
-				end
+				local dir = dirs[i]
 
-				local dirname = dirs[i]
-
-				if dirname:find(basename_pattern)
-					and dirname ~= dupe
+				if dir:find(pat)
+					and dir ~= dupe
 				then
-					autocomp_len = autocomp_len + 1
+					len = len + 1
 
-					autocomp = autocomp or {}
+					tbl = tbl or {}
 
-					autocomp[autocomp_len] = curdir .. dirname .. sep
+					tbl[len] = curdir .. dir .. sep
 				end
 			end
 		end
 
 		if files then
 			for i = 1, #files do
-				if autocomp_len >= maxresults then
-					break
-				end
+				local file = files[i]
 
-				local filename = files[i]
-
-				if (audchan or exts[filename:match("%.([^%.]+)$") or ""])
-					and filename ~= dupe
+				if (audchan or exts[file:match("%.([^%.]+)$") or ""])
+					and file ~= dupe
 				then
-					autocomp_len = autocomp_len + 1
+					len = len + 1
 
-					autocomp = autocomp or {}
+					tbl = tbl or {}
 
-					autocomp[autocomp_len] = curdir .. filename
+					tbl[len] = curdir .. file
 				end
 			end
 		end
 
-		cache[val] = autocomp
+		cache[val] = tbl
 
-		return autocomp
+		return tbl
 	end
-	d.GetAutoComplete = GetAutoComplete
-
-	d = f:NumSlider("#ttt_combattext.hitsound.volume", "ttt_dingaling_volume", 0, 1, 2)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.hitsound.volume_desc")
-
-	d = f:NumSlider("#ttt_combattext.hitsound.pitchmax", "ttt_dingaling_pitchmaxdmg", 0, 200, 0)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.hitsound.pitchmax_desc")
-
-	d = f:NumSlider("#ttt_combattext.hitsound.pitchmin", "ttt_dingaling_pitchmindmg", 0, 200, 0)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.hitsound.pitchmin_desc")
-
-	d = f:CheckBox("#ttt_combattext.hitsound.IGModAudioChannel", "ttt_dingaling_IGModAudioChannel")
-	d:SetTooltip("#ttt_combattext.hitsound.IGModAudioChannel_desc")
-
-	d = f:Button("#ttt_combattext.hitsound.play")
-	function d:OnDepressed()
-		return playhitsound(math.random(0, 150), false)
+	local function OnGetFocus()
+		cachemeta.__mode = nil
+	end
+	local function OnLoseFocus()
+		cachemeta.__mode = "v"
 	end
 
-	dsettings:AddItem(f)
+	tkpfx, cvpfx = "hitsound", "dingaling"
 
-	f = vgui.Create("DForm", dsettings)
-	f:SetName("#ttt_combattext.killsound.title")
+	local lh
+	::lasthit::
 
-	d = f:CheckBox("#ttt_combattext.killsound.enable", "ttt_dingaling_lasthit")
-	d:SetTooltip("#ttt_combattext.killsound.enable_desc")
+	f = vgui.Create("DForm", panel)
+	f:SetName(le("title"))
 
-	d = f:TextEntry("#ttt_combattext.killsound.file", "ttt_dingaling_lasthit_file")
-	d:SetTooltip("#ttt_combattext.killsound.file_desc")
-	d.GetAutoComplete = GetAutoComplete
+	add("CheckBox", "enable", "")
 
-	d = f:NumSlider("#ttt_combattext.killsound.volume", "ttt_dingaling_lasthit_volume", 0, 1, 2)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.killsound.volume_desc")
+	local dfile = add("TextEntry", "file")
+	dfile.GetAutoComplete = GetAutoComplete
+	dfile.OnGetFocus = OnGetFocus
+	dfile.OnLoseFocus = OnLoseFocus
 
-	d = f:NumSlider("#ttt_combattext.killsound.pitchmax", "ttt_dingaling_lasthit_pitchmaxdmg", 0, 200, 0)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.killsound.pitchmax_desc")
+	add("NumSlider", "volume", nil, 0, 1, 2)
 
-	d = f:NumSlider("#ttt_combattext.killsound.pitchmin", "ttt_dingaling_lasthit_pitchmindmg", 0, 200, 0)
-	d.Label:SetWrap(true)
-	d:SetTooltip("#ttt_combattext.killsound.pitchmin_desc")
+	add("NumSlider", "pitchmax", "pitchmaxdmg", 0, 200, 0)
 
-	d = f:Button("#ttt_combattext.killsound.play")
-	function d:OnDepressed()
-		return playhitsound(math.random(0, 150), true)
+	add("NumSlider", "pitchmin", "pitchmindmg", 0, 200, 0)
+
+	if not lh then
+		add("CheckBox", "IGModAudioChannel")
 	end
 
-	dsettings:AddItem(f)
-
-	if ConVarExists("ttt_combattext_bodyarmor") then -- listen server
-		f = vgui.Create("DForm", dsettings)
-		f:SetName("#ttt_combattext.server.title")
-
-		d = f:ComboBox("#ttt_combattext.server.bodyarmor", "ttt_combattext_bodyarmor")
-		d:SetTooltip("#ttt_combattext.server.bodyarmor_desc")
-		d:SetSortItems(false)
-		d:AddChoice("#ttt_combattext.server.bodyarmor_choice0", 0)
-		d:AddChoice("#ttt_combattext.server.bodyarmor_choice1", 1)
-		d:AddChoice("#ttt_combattext.server.bodyarmor_choice2", 2)
-
-		d = f:ComboBox("#ttt_combattext.server.disguise", "ttt_combattext_disguise")
-		d:SetTooltip("#ttt_combattext.server.bodyarmor_desc")
-		d:SetSortItems(false)
-		d:AddChoice("#ttt_combattext.server.disguise_choice0", 0)
-		d:AddChoice("#ttt_combattext.server.disguise_choice1", 1)
-		d:AddChoice("#ttt_combattext.server.disguise_choice2", 2)
-
-		d = f:CheckBox("#ttt_combattext.server.lineofsight", "ttt_combattext_lineofsight")
-		d:SetTooltip("#ttt_combattext.server.lineofsight_desc")
-
-		d = f:ComboBox("#ttt_combattext.server.rounding", "ttt_combattext_rounding")
-		d:SetSortItems(false)
-		d:AddChoice("#ttt_combattext.server.rounding_floor", 0)
-		d:AddChoice("#ttt_combattext.server.rounding_nearest", 1)
-		d:AddChoice("#ttt_combattext.server.rounding_ceiling", 2)
-
-		d = f:CheckBox("#ttt_combattext.server.killsounds", "ttt_dingaling_lasthit_allowed")
-		d:SetTooltip("#ttt_combattext.server.killsounds")
-
-		dsettings:AddItem(f)
+	local kill = lh
+	f:Button(le("play")).OnDepressed = function()
+		return playhitsound(math.random(0, 150), kill)
 	end
 
-	dtabs:AddSheet("#ttt_combattext.sheet.title", dsettings, nil, false, false)
+	panel:AddItem(f)
+	if onaddform then
+		onaddform(f)
+	end
+
+	if not lh then
+		lh = true
+		tkpfx, cvpfx = "killsound", "dingaling_lasthit"
+		goto lasthit
+	end
+
+	if not ConVarExists("ttt_combattext_bodyarmor") then
+		return
+	end
+	-- listen server
+
+	tkpfx, cvpfx = "server", "combattext"
+
+	f = vgui.Create("DForm", panel)
+	f:SetName(le("title"))
+
+	local d = add("ComboBox", "bodyarmor")
+	d:SetSortItems(false)
+	for i = 0, 2 do
+		d:AddChoice(le("bodyarmor_choice" .. i), i)
+	end
+
+	d = add("ComboBox", "disguise")
+	d:SetSortItems(false)
+	for i = 0, 2 do
+		d:AddChoice(le("disguise_choice" .. i), i)
+	end
+
+	add("CheckBox", "lineofsight")
+
+	d = add("ComboBox", "rounding")
+	d:SetSortItems(false)
+	d:AddChoice(le("rounding_floor"), 0)
+	d:AddChoice(le("rounding_nearest"), 1)
+	d:AddChoice(le("rounding_ceiling"), 2)
+
+	cvpfx = "dingaling"
+
+	add("CheckBox", "killsounds", "lasthit_allowed")
+
+	panel:AddItem(f)
+	if onaddform then
+		onaddform(f)
+	end
+end
+
+hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
+	local dsettings = vgui.Create("DPanelList", dtabs)
+	dsettings:StretchToParent(0, 0, dtabs:GetPadding() * 2, 0)
+	dsettings:EnableVerticalScrollbar(true)
+	dsettings:SetPadding(10)
+	dsettings:SetSpacing(10)
+
+	createsettingstab(dsettings, true)
+
+	dtabs:AddSheet("#ttt_combattext.title", dsettings, nil, false, false)
+end)
+
+hook.Add("AddToolMenuCategories", "ttt_combattext_AddToolMenuCategories", function()
+	spawnmenu.AddToolCategory(
+		"Options",
+		"ttt_combattext",
+		"#ttt_combattext.title"
+	)
+end)
+
+hook.Add("PopulateToolMenu", "ttt_combattext_PopulateToolMenu", function()
+	spawnmenu.AddToolMenuOption(
+		"Options",
+		"ttt_combattext",
+		"ttt_combattext",
+		"#ttt_combattext.spawnmenu",
+		"", "",
+		function(panel)
+			panel:SetHeaderHeight(0)
+
+			createsettingstab(panel, false, function(f)
+				f:GetParent():DockPadding(0, 0, 0, 10)
+			end)
+		end
+	)
 end)
