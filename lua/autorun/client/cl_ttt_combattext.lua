@@ -48,6 +48,8 @@ local function rgb2hex(r, g, b, a)
 	):format(r, g, b, a)
 end
 
+--local vscale = Vector(0.1, 0.1, 0.1)
+
 local updateuserinfo, updatefont
 local dingaling_chan, dingaling_lasthit_chan
 local tkpfx, cvpfx
@@ -87,9 +89,12 @@ for _, v in ipairs({
 {
 	"scale", 1.0,
 	function(_,_, new)
-		combattext_scale = tonumber(new) or 1.0
+		combattext_scale = tonumber(new) or 1
 
 		updatefont = true
+
+		--local s = combattext_scale * 0.1
+		--vscale[1], vscale[2], vscale[3] = s, s, s
 	end
 },
 {
@@ -240,17 +245,12 @@ for _, v in ipairs({
 
 	if v[5] then
 		fc = fc + FCVAR_USERINFO
-
 		tkpfx, cv = "#ttt_combattext." .. v[4] .. ".", "ttt_" .. v[1]
-
 		tk = tkpfx .. "enable"
-
 		cvpfx = cv .. "_"
 	else
 		tk, cv = v[4], v[1]
-
 		tk = tkpfx .. (tk or cv .. "_desc")
-
 		cv = cvpfx .. cv
 	end
 
@@ -272,6 +272,7 @@ local function updatefontfn()
 	local fontdata = {
 		font = combattext_font,
 		size = 26 * combattext_scale,
+		--size = 260,
 		outline = combattext_outline,
 		antialias = combattext_antialias,
 	}
@@ -438,6 +439,7 @@ net.Receive("ttt_combattext", function()
 end)
 
 local vec = Vector()
+--local mat = Matrix()
 
 local SetFont, SetTextPos, SetTextColor, DrawText =
 	surface.SetFont, surface.SetTextPos, surface.SetTextColor, surface.DrawText
@@ -452,6 +454,7 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	local float_height = 32
 
 	local vec = vec
+	--local mat, vscale = mat, vscale
 
 	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
 	local headshot
@@ -476,9 +479,8 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 
 			local lifeperc = lifetime / max_lifetime
 
-			vec[1] = pos[1]
-			vec[2] = pos[2]
-			vec[3] = pos[3] + lifeperc * float_height
+			vec[1], vec[2], vec[3] =
+				pos[1], pos[2], pos[3] + lifeperc * float_height
 
 			pos = vec:ToScreen()
 
@@ -491,12 +493,28 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 						or "ttt_combattext_font")
 				end
 
-				SetTextPos(pos.x, pos.y)
+				local x, y = pos.x, pos.y
+
+--[[
+-- this is supposed to be a better way to scale text, but it looks ugly
+-- so it's just a wip for now until i can make it not ugly
+				mat:Identity()
+				vec[1], vec[2], vec[3] = x, y, 0
+				mat:Translate(vec)
+				mat:Scale(vscale)
+				vec[1], vec[2] = -x, -y
+				mat:Translate(vec)
+				cam.PushModelMatrix(mat)
+--]]
+
+				SetTextPos(x, y)
 
 				SetTextColor(r, g, b,
 					lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
 
 				DrawText(num[4])
+
+				--cam.PopModelMatrix()
 			end
 		end
 
@@ -580,11 +598,7 @@ local function createsettingstab(panel, indentmixer, onaddform)
 		return char:find("%X") and true or false
 	end
 	function dhex:OnValueChange(val)
-		local r, g, b, a = hex2rgb(val)
-		col.r = r
-		col.g = g
-		col.b = b
-		col.a = a
+		col.r, col.g, col.b, col.a = hex2rgb(val)
 
 		lock = true
 		dmix:SetColor(col)
@@ -708,12 +722,6 @@ local function createsettingstab(panel, indentmixer, onaddform)
 
 		return tbl
 	end
-	local function OnGetFocus()
-		cachemeta.__mode = nil
-	end
-	local function OnLoseFocus()
-		cachemeta.__mode = "v"
-	end
 
 	tkpfx, cvpfx = "hitsound", "dingaling"
 
@@ -727,8 +735,16 @@ local function createsettingstab(panel, indentmixer, onaddform)
 
 	local dfile = add("TextEntry", "file")
 	dfile.GetAutoComplete = GetAutoComplete
-	dfile.OnGetFocus = OnGetFocus
-	dfile.OnLoseFocus = OnLoseFocus
+	local OnGetFocus = dfile.OnGetFocus
+	function dfile:OnGetFocus()
+		cachemeta.__mode = nil
+		return OnGetFocus(self)
+	end
+	local OnLoseFocus = dfile.OnLoseFocus
+	function dfile:OnLoseFocus()
+		cachemeta.__mode = "v"
+		return OnLoseFocus(self)
+	end
 
 	add("NumSlider", "volume", nil, 0, 1, 2)
 
