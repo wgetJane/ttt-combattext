@@ -4,7 +4,7 @@ by default, this addon shows the damage you would've dealt without armour agains
 
 this addon has the option to hide damage numbers from disguised targets, but this is disabled by default because it doesnt bother me
 
-the default damage number font is arial, yellow, with outlines, but clients can change change colour, size, etc to whatever they want and change the font to any font installed on their computer
+the default damage number font is verdana, yellow, with outlines, but clients can change change colour, size, etc to whatever they want and change the font to any font installed on their computer
 
 hitsound is disabled by default, and the default hitsound is from quake but clients can change the sound file it plays to whatever they want
 
@@ -24,10 +24,11 @@ this was made for ttt, but it should still work just fine on other gamemodes
 #### client cvars:
 `ttt_combattext 1` Display damage numbers  
 `ttt_combattext_batching_window 0.3` Maximum delay between damage events in order to batch numbers, set to 0 to disable  
-`ttt_combattext_font "Arial"` Font face used for damage numbers  
+`ttt_combattext_font "Verdana"` Font face used for damage numbers  
 `ttt_combattext_color "ffff00"` Color of damage numbers in hex format: RRGGBBAA  
 `ttt_combattext_scale 1.0` Size of damage numbers  
 `ttt_combattext_outline 1` Draw damage numbers with outlines  
+`ttt_combattext_shadow 0` Draw damage numbers with drop shadows  
 `ttt_combattext_antialias 0` Draw damage numbers with smooth text  
 
 `ttt_dingaling 0` Play a sound whenever you damage an enemy  

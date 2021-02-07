@@ -1,9 +1,10 @@
 local combattext = true
 local combattext_batching_window = 0.3
-local combattext_font = "Arial"
+local combattext_font = "Verdana"
 local combattext_r, combattext_g, combattext_b, combattext_a = 255, 255, 0, 255
-local combattext_scale = 1.0
+local combattext_scale = 1
 local combattext_outline = true
+local combattext_shadow = false
 local combattext_antialias = false
 local dingaling = false
 local dingaling_file = "ttt_combattext/hitsound.ogg"
@@ -85,7 +86,7 @@ for _, v in ipairs({
 	end
 },
 {
-	"scale", 1.0,
+	"scale", 1,
 	function(_,_, new)
 		combattext_scale = tonumber(new) or 1
 
@@ -96,6 +97,14 @@ for _, v in ipairs({
 	"outline", 1,
 	function(_,_, new)
 		combattext_outline = tonumber(new) == 1
+
+		updatefont = true
+	end
+},
+{
+	"shadow", 0,
+	function(_,_, new)
+		combattext_shadow = tonumber(new) == 1
 
 		updatefont = true
 	end
@@ -268,6 +277,7 @@ local function updatefontfn()
 		font = combattext_font,
 		size = 26 * combattext_scale,
 		outline = combattext_outline,
+		shadow = combattext_shadow,
 		antialias = combattext_antialias,
 	}
 	surface.CreateFont("ttt_combattext_font", fontdata)
@@ -303,7 +313,7 @@ local function playhitsound(damage, lasthit, ent)
 	end
 
 	if not dingaling_IGModAudioChannel then
-		return (ent or Entity(0)):EmitSound(
+		return (ent or game.GetWorld()):EmitSound(
 			file, 0, pitch, volume, CHAN_STATIC
 		)
 	end
@@ -604,6 +614,8 @@ local function createsettingstab(panel, onaddform)
 	add("NumSlider", "scale", nil, 0, 3, 2)
 
 	add("CheckBox", "outline")
+
+	add("CheckBox", "shadow")
 
 	add("CheckBox", "antialias")
 
