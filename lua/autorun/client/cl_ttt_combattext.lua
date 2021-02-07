@@ -2,7 +2,7 @@ local combattext = true
 local combattext_batching_window = 0.3
 local combattext_font = "Arial"
 local combattext_r, combattext_g, combattext_b, combattext_a = 255, 255, 0, 255
-local combattext_scale = 1.0
+local combattext_scale = Vector(0.25, 0.25, 0.25)
 local combattext_outline = true
 local combattext_antialias = false
 local dingaling = false
@@ -87,25 +87,20 @@ for _, v in ipairs({
 {
 	"scale", 1.0,
 	function(_,_, new)
-		combattext_scale = tonumber(new) or 1
-
-		updatefont = true
+		local s = (tonumber(new) or 1) * 0.25
+		combattext_scale[1], combattext_scale[2], combattext_scale[3] = s, s, s
 	end
 },
 {
 	"outline", 1,
 	function(_,_, new)
 		combattext_outline = tonumber(new) == 1
-
-		updatefont = true
 	end
 },
 {
 	"antialias", 0,
 	function(_,_, new)
 		combattext_antialias = tonumber(new) == 1
-
-		updatefont = true
 	end
 },
 {
@@ -264,16 +259,11 @@ end
 local function updatefontfn()
 	updatefont = false
 
-	local fontdata = {
+	surface.CreateFont("ttt_combattext_font", {
 		font = combattext_font,
-		size = 26 * combattext_scale,
-		outline = combattext_outline,
-		antialias = combattext_antialias,
-	}
-	surface.CreateFont("ttt_combattext_font", fontdata)
-
-	fontdata.size = fontdata.size * (4 / 3)
-	surface.CreateFont("ttt_combattext_font_headshot", fontdata)
+		size = 26 * 4,
+		antialias = true,
+	})
 end
 
 local function RemapValClamped(val, a, b, c, d)
@@ -432,7 +422,13 @@ net.Receive("ttt_combattext", function()
 	end
 end)
 
-local vec = Vector()
+local vec, mat = Vector(), Matrix()
+local headshot_scale = Vector(4 / 3, 4 / 3, 4 / 3)
+
+local PushFilterMin, PopFilterMin, PushModelMatrix, PopModelMatrix =
+	render.PushFilterMin, render.PopFilterMin, cam.PushModelMatrix, cam.PopModelMatrix
+
+local filter = TEXFILTER.ANISOTROPIC -- smoother movement; not anti-aliasing
 
 local SetFont, SetTextPos, SetTextColor, DrawText =
 	surface.SetFont, surface.SetTextPos, surface.SetTextColor, surface.DrawText
@@ -446,10 +442,13 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	local max_lifetime = 1.5
 	local float_height = 32
 
-	local vec = vec
+	local vec, mat, vscale = vec, mat, combattext_scale
 
 	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
-	local headshot
+
+	SetFont("ttt_combattext_font")
+
+	PushFilterMin(filter)
 
 	local num = head
 	while num do
@@ -477,25 +476,36 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 			pos = vec:ToScreen()
 
 			if pos.visible then
-				if num[5] ~= headshot then
-					headshot = num[5]
+				-- no outlines and no anti-aliasing for now, wip
 
-					SetFont(headshot
-						and "ttt_combattext_font_headshot"
-						or "ttt_combattext_font")
+				mat:Identity()
+
+				vec[1], vec[2], vec[3] = pos.x, pos.y, 0
+				mat:Translate(vec)
+
+				mat:Scale(vscale)
+
+				if num[5] then
+					mat:Scale(headshot_scale)
 				end
 
-				SetTextPos(pos.x, pos.y)
+				PushModelMatrix(mat)
+
+				SetTextPos(0, 0)
 
 				SetTextColor(r, g, b,
 					lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
 
 				DrawText(num[4])
+
+				PopModelMatrix()
 			end
 		end
 
 		num = nxt
 	end
+
+	PopFilterMin()
 end)
 
 local function createsettingstab(panel, onaddform)
