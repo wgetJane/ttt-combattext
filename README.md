@@ -1,9 +1,5 @@
 ## tf2-style damage numbers and hit sounds for ttt
 
-i made this while listening to the undertale concert (it filled me with determination) and i finished it rgith when megalovania started playing (perfect timimg)
-
-i only bothered making this because the only damage numbers mod i found on the gmod workshop is weird as hell, it's very overengineered and all its config options are serversided and it looks distracting as hell i dont wanna use that
-
 by default, this addon shows the damage you would've dealt without armour against armoured players, since it'd be silly if you can just shoot people in the feet to check if theyre wearing armour
 
 this addon has the option to hide damage numbers from disguised targets, but this is disabled by default because it doesnt bother me
@@ -14,7 +10,13 @@ hitsound is disabled by default, and the default hitsound is from quake but clie
 
 this was made for ttt, but it should still work just fine on other gamemodes
 
-#### press F1 and go to the "Combat text" tab to customise damage text and hit sounds
+#### how to access the settings menu
+
+***trouble in terrorist town***: press F1 and go to the "Combat text" tab
+
+***sandbox***: press F1, go to the "Options" tab, then go to the "Combat text settings" tab
+
+***other gamemodes***: enter the `combattext_settings` command in the console
 
 ![](https://user-images.githubusercontent.com/52103358/104728539-fba8d980-5771-11eb-99a9-7f6a18c943af.png)
 ![](https://user-images.githubusercontent.com/52103358/104728561-08c5c880-5772-11eb-9381-85ce170fd8d1.png)

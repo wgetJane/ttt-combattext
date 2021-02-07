@@ -48,8 +48,6 @@ local function rgb2hex(r, g, b, a)
 	):format(r, g, b, a)
 end
 
---local vscale = Vector(0.1, 0.1, 0.1)
-
 local updateuserinfo, updatefont
 local dingaling_chan, dingaling_lasthit_chan
 local tkpfx, cvpfx
@@ -92,9 +90,6 @@ for _, v in ipairs({
 		combattext_scale = tonumber(new) or 1
 
 		updatefont = true
-
-		--local s = combattext_scale * 0.1
-		--vscale[1], vscale[2], vscale[3] = s, s, s
 	end
 },
 {
@@ -272,7 +267,6 @@ local function updatefontfn()
 	local fontdata = {
 		font = combattext_font,
 		size = 26 * combattext_scale,
-		--size = 260,
 		outline = combattext_outline,
 		antialias = combattext_antialias,
 	}
@@ -439,7 +433,6 @@ net.Receive("ttt_combattext", function()
 end)
 
 local vec = Vector()
---local mat = Matrix()
 
 local SetFont, SetTextPos, SetTextColor, DrawText =
 	surface.SetFont, surface.SetTextPos, surface.SetTextColor, surface.DrawText
@@ -454,7 +447,6 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	local float_height = 32
 
 	local vec = vec
-	--local mat, vscale = mat, vscale
 
 	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
 	local headshot
@@ -493,28 +485,12 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 						or "ttt_combattext_font")
 				end
 
-				local x, y = pos.x, pos.y
-
---[[
--- this is supposed to be a better way to scale text, but it looks ugly
--- so it's just a wip for now until i can make it not ugly
-				mat:Identity()
-				vec[1], vec[2], vec[3] = x, y, 0
-				mat:Translate(vec)
-				mat:Scale(vscale)
-				vec[1], vec[2] = -x, -y
-				mat:Translate(vec)
-				cam.PushModelMatrix(mat)
---]]
-
-				SetTextPos(x, y)
+				SetTextPos(pos.x, pos.y)
 
 				SetTextColor(r, g, b,
 					lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
 
 				DrawText(num[4])
-
-				--cam.PopModelMatrix()
 			end
 		end
 
@@ -522,7 +498,7 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	end
 end)
 
-local function createsettingstab(panel, indentmixer, onaddform)
+local function createsettingstab(panel, onaddform)
 	local f, tkpfx, cvpfx
 
 	local function le(tk)
@@ -607,8 +583,8 @@ local function createsettingstab(panel, indentmixer, onaddform)
 	dmix = vgui.Create("DColorMixer")
 	dmix:SetColor(col)
 	dmix:SetHeight(92)
-	if indentmixer then
-		dmix:DockMargin(dhex_lbl:GetWide(), 0, 0, 0)
+	function dmix:OnSizeChanged(w)
+		dmix:DockMargin(w < 215 and 0 or dhex_lbl:GetWide(), 0, 0, 0)
 	end
 	dmix:SetAlphaBar(true)
 	dmix:SetPalette(false)
@@ -819,7 +795,7 @@ hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
 	dsettings:SetPadding(10)
 	dsettings:SetSpacing(10)
 
-	createsettingstab(dsettings, true)
+	createsettingstab(dsettings)
 
 	dtabs:AddSheet("#ttt_combattext.title", dsettings, nil, false, false)
 end)
@@ -842,9 +818,35 @@ hook.Add("PopulateToolMenu", "ttt_combattext_PopulateToolMenu", function()
 		function(panel)
 			panel:SetHeaderHeight(0)
 
-			createsettingstab(panel, false, function(f)
+			createsettingstab(panel, function(f)
 				f:GetParent():DockPadding(0, 0, 0, 10)
 			end)
 		end
 	)
+end)
+
+concommand.Add("combattext_settings", function()
+	local dframe = vgui.Create("DFrame")
+	dframe:SetTitle("#ttt_combattext.spawnmenu")
+	dframe:SetDraggable(true)
+	dframe:SetDeleteOnClose(true)
+	dframe:ShowCloseButton(true)
+	dframe:SetSizable(true)
+	dframe:SetSize(640, 480)
+	dframe:SetMinWidth(227)
+	dframe:SetMinHeight(150)
+	dframe:Center()
+	dframe:MakePopup()
+
+	local dpanel = vgui.Create("DPanel", dframe)
+	dpanel:Dock(FILL)
+
+	local dsettings = vgui.Create("DScrollPanel", dpanel)
+	dsettings:Dock(FILL)
+	dsettings:GetCanvas():DockPadding(8, 0, 8, 16)
+
+	createsettingstab(dsettings, function(f)
+		f:DockMargin(0, 8, 0, 8)
+		f:Dock(TOP)
+	end)
 end)
