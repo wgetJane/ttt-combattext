@@ -102,77 +102,70 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 	end
 
 	-- store certain information that might not be available in the PostEntityTakeDamage hook
-	local data
+	local data = victim.ttt_combattext_hitdata
 
-	if combattext_bodyarmor > 0 then
-		local scale
+	if not data then
+		data = {}
+		victim.ttt_combattext_hitdata = data
+	end
 
-		if TTT2 then
-			local cv = ARMOR and ARMOR.cv
+	data.vicpos = victim:GetPos()
 
-			if not (cv
-				and cv.armor_classic
-				and cv.armor_classic:GetBool()
-			) then
-				goto done
-			end
+	data.bodyarmor = false
 
-			if combattext_bodyarmor ~= 2
-				and victim:GetBaseRole() == ROLE_DETECTIVE
-			then
-				goto done
-			end
+	if combattext_bodyarmor < 1 then
+	elseif TTT2 then
+		local cv = ARMOR and ARMOR.cv
 
-			if GetRoundState() ~= ROUND_ACTIVE then
-				goto done
-			end
+		if not (cv
+			and cv.armor_classic
+			and cv.armor_classic:GetBool()
+		) then
+			goto done
+		end
 
-			local armor = victim:GetArmor()
-
-			if armor == 0 then
-				goto done
-			end
-
-			if not dmginfo:IsDamageType(DMG_BULLET + DMG_CLUB) then
-				goto done
-			end
-
-			if victim:LastHitGroup() == HITGROUP_HEAD
-				and cv.item_armor_block_headshots
-				and not cv.item_armor_block_headshots:GetBool()
-			then
-				goto done
-			end
-
-			scale = 1 / 0.7
-
-			::done::
-		elseif victim.HasEquipmentItem
-			and victim:HasEquipmentItem(EQUIP_ARMOR)
-			and not (combattext_bodyarmor ~= 2
-				and victim.GetDetective
-				and victim:GetDetective())
-			and dmginfo:IsBulletDamage()
+		if combattext_bodyarmor ~= 2
+			and victim:GetBaseRole() == ROLE_DETECTIVE
 		then
-			scale = 1 / 0.7
+			goto done
 		end
 
-		if scale then
-			data = data or {}
-
-			data.bodyarmor = scale
+		if GetRoundState() ~= ROUND_ACTIVE then
+			goto done
 		end
-	end
 
-	if combattext_disguise > 0
-		and victim:GetNWBool("disguised", false)
+		local armor = victim:GetArmor()
+
+		if armor == 0 then
+			goto done
+		end
+
+		if not dmginfo:IsDamageType(DMG_BULLET + DMG_CLUB) then
+			goto done
+		end
+
+		if victim:LastHitGroup() == HITGROUP_HEAD
+			and cv.item_armor_block_headshots
+			and not cv.item_armor_block_headshots:GetBool()
+		then
+			goto done
+		end
+
+		data.bodyarmor = 1 / 0.7
+
+		::done::
+	elseif victim.HasEquipmentItem
+		and victim:HasEquipmentItem(EQUIP_ARMOR)
+		and not (combattext_bodyarmor ~= 2
+			and victim.GetDetective
+			and victim:GetDetective())
+		and dmginfo:IsBulletDamage()
 	then
-		data = data or {}
-
-		data.disguise = true
+		data.bodyarmor = 1 / 0.7
 	end
 
-	victim.ttt_combattext_hitdata = data
+	data.disguise = combattext_disguise > 0
+		and victim:GetNWBool("disguised", false)
 end)
 
 -- indices from 1 up to maxplayers are reserved for players, so net messages can be optimised for players
@@ -220,7 +213,6 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 	local attacker_alive = attacker:Alive()
 
 	local data = victim.ttt_combattext_hitdata
-	victim.ttt_combattext_hitdata = nil
 
 	-- check if disguised
 	if attacker_alive
@@ -336,16 +328,14 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 		-- use only 1-7 bits for players, use 16 bits for npcs
 		if idx > 0 and idx <= maxplayers then
-			if TTT2
-				and victim.Alive
-				and not victim:Alive()
-				and victim.lastDeathPosition
+			if victim.Alive and not victim:Alive()
+				and data and data.vicpos
 			then
 				net.WriteUInt(3, 2)
 
 				net.WriteUInt(idx - 1, maxplayers_bits)
 
-				net.WriteVector(victim.lastDeathPosition)
+				net.WriteVector(data.vicpos)
 			else
 				net.WriteUInt(2, 2)
 
