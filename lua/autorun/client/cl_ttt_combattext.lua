@@ -411,32 +411,31 @@ net.Receive("ttt_combattext", function()
 	local realtime = RealTime()
 
 	if num and batch
-		and victim == num[7]
-		and realtime - num[2] <= combattext_batching_window
+		and victim == num.vic
+		and realtime - num.birth <= combattext_batching_window
 	then
-		damage = num[6] + damage
+		damage = num.dmg + damage
 
-		num[2] = realtime
-		num[3] = pos
-		num[4] = ("-%d"):format(damage)
-		num[5] = net.ReadBool()
-		num[6] = damage
+		num.birth = realtime
+		num.pos = pos
+		num.str = ("-%d"):format(damage)
+		num.hs = net.ReadBool()
+		num.dmg = damage
 
 		return
 	end
 
 	tail = {
-		false,
-		realtime,
-		pos,
-		("-%d"):format(damage),
-		net.ReadBool(),
-		batch and damage or nil,
-		batch and victim or nil,
+		birth = realtime,
+		pos = pos,
+		str = ("-%d"):format(damage),
+		hs = net.ReadBool(),
+		dmg = batch and damage or nil,
+		vic = batch and victim or nil,
 	}
 
 	if num then
-		num[1] = tail
+		num.nxt = tail
 	else
 		head = tail
 	end
@@ -462,49 +461,55 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	local headshot
 
 	local num = head
-	while num do
-		local lifetime = realtime - num[2]
 
-		local nxt = num[1]
+	::loop::
 
-		if lifetime > max_lifetime then
-			head = nxt
+	local lifetime = realtime - num.birth
 
-			if nxt then
-				num[1] = false
-			else
-				tail = nil
-				break
-			end
+	local nxt = num.nxt
+
+	if lifetime > max_lifetime then
+		head = nxt
+
+		if nxt then
+			num.nxt = nil
 		else
-			local pos = num[3]
+			tail = nil
 
-			local lifeperc = lifetime / max_lifetime
-
-			vec[1], vec[2], vec[3] =
-				pos[1], pos[2], pos[3] + lifeperc * float_height
-
-			pos = vec:ToScreen()
-
-			if pos.visible then
-				if num[5] ~= headshot then
-					headshot = num[5]
-
-					SetFont(headshot
-						and "ttt_combattext_font_headshot"
-						or "ttt_combattext_font")
-				end
-
-				SetTextPos(pos.x, pos.y)
-
-				SetTextColor(r, g, b,
-					lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
-
-				DrawText(num[4])
-			end
+			return
 		end
+	else
+		local pos = num.pos
 
-		num = nxt
+		local lifeperc = lifetime / max_lifetime
+
+		vec[1], vec[2], vec[3] =
+			pos[1], pos[2], pos[3] + lifeperc * float_height
+
+		pos = vec:ToScreen()
+
+		if pos.visible then
+			if num.hs ~= headshot then
+				headshot = num.hs
+
+				SetFont(headshot
+					and "ttt_combattext_font_headshot"
+					or "ttt_combattext_font")
+			end
+
+			SetTextPos(pos.x, pos.y)
+
+			SetTextColor(r, g, b,
+				lifeperc > 0.5 and a * (2 - 2 * lifeperc) or a)
+
+			DrawText(num.str)
+		end
+	end
+
+	num = nxt
+
+	if num then
+		goto loop
 	end
 end)
 
