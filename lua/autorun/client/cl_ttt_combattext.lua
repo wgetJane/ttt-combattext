@@ -358,6 +358,8 @@ local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
 
 local head, tail
 
+local pool_size, pool = 0
+
 local RealTime = RealTime
 
 net.Receive("ttt_combattext", function()
@@ -393,8 +395,10 @@ net.Receive("ttt_combattext", function()
 
 	local pos = uint == 3 and net.ReadVector() or victim:GetPos()
 
+	local x, y, z = pos.x, pos.y, pos.z
+
 	local _, vmax = victim:GetCollisionBounds()
-	pos.z = pos.z + vmax.z + RemapValClamped(
+	z = z + vmax.z + RemapValClamped(
 			pos:DistToSqr(attacker:GetPos()),
 			0, 256 * 256,
 			0, 16
@@ -417,27 +421,38 @@ net.Receive("ttt_combattext", function()
 		damage = num.dmg + damage
 
 		num.birth = realtime
-		num.pos = pos
-		num.str = ("-%d"):format(damage)
+		num[1], num[2], num[3] = x, y, z
+		num.str = "-" .. damage
 		num.hs = net.ReadBool()
 		num.dmg = damage
 
 		return
 	end
 
-	tail = {
-		birth = realtime,
-		pos = pos,
-		str = ("-%d"):format(damage),
-		hs = net.ReadBool(),
-		dmg = batch and damage or nil,
-		vic = batch and victim or nil,
-	}
+	local push
+	if pool then
+		push = pool
+
+		pool = push.nxtpool
+
+		pool_size = pool_size - 1
+	else
+		push = {0, 0, 0}
+	end
+
+	push.birth = realtime
+	push[1], push[2], push[3] = x, y, z
+	push.str = "-" .. damage
+	push.hs = net.ReadBool()
+	push.dmg = batch and damage or nil
+	push.vic = batch and victim or nil
+
+	tail = push
 
 	if num then
-		num.nxt = tail
+		num.nxt = push
 	else
-		head = tail
+		head = push
 	end
 end)
 
@@ -469,6 +484,18 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	local nxt = num.nxt
 
 	if lifetime > max_lifetime then
+		if pool_size < 8 then
+			num.vic = nil
+
+			num.nxtpool = pool
+
+			pool = num
+
+			pool_size = pool_size + 1
+		else
+			num.nxtpool = nil
+		end
+
 		head = nxt
 
 		if nxt then
@@ -479,14 +506,12 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 			return
 		end
 	else
-		local pos = num.pos
-
 		local lifeperc = lifetime / max_lifetime
 
 		vec[1], vec[2], vec[3] =
-			pos[1], pos[2], pos[3] + lifeperc * float_height
+			num[1], num[2], num[3] + lifeperc * float_height
 
-		pos = vec:ToScreen()
+		local pos = vec:ToScreen()
 
 		if pos.visible then
 			if num.hs ~= headshot then
