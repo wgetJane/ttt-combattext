@@ -1,5 +1,5 @@
 local combattext = true
-local combattext_batching_window = 0.3
+local combattext_batching_window = 0.25
 local combattext_font = "Verdana"
 local combattext_r, combattext_g, combattext_b, combattext_a = 255, 255, 0, 255
 local combattext_scale = 1
@@ -65,9 +65,9 @@ for _, v in ipairs({
 	"dmgtext", true
 },
 {
-	"batching_window", 0.3,
+	"batching_window", 0.25,
 	function(_,_, new)
-		combattext_batching_window = tonumber(new) or 0.3
+		combattext_batching_window = tonumber(new) or 0.25
 	end,
 	"batch_desc"
 },
@@ -360,6 +360,10 @@ local head, tail
 
 local pool_size, pool = 0
 
+local weakkeys, weakvals = {__mode = "k"}, {__mode = "v"}
+
+local batchvics = setmetatable({}, weakkeys)
+
 local RealTime = RealTime
 
 net.Receive("ttt_combattext", function()
@@ -408,28 +412,38 @@ net.Receive("ttt_combattext", function()
 		updatefontfn()
 	end
 
-	local num = tail
-
 	local batch = combattext_batching_window > 0
 
 	local realtime = RealTime()
 
-	if num and batch
-		and victim == num.vic
-		and realtime - num.birth <= combattext_batching_window
-	then
-		damage = num.dmg + damage
+	local push
 
-		num.birth = realtime
-		num[1], num[2], num[3] = x, y, z
-		num.str = "-" .. damage
-		num.hs = net.ReadBool()
-		num.dmg = damage
+	local bvic = batch and batchvics[victim] or nil
+	if bvic then
+		push = bvic and bvic.num
 
-		return
+		if push then
+			if bvic == push.bvic
+				and realtime - push.birth
+					<= combattext_batching_window
+			then
+				damage = bvic.dmg + damage
+
+				bvic.dmg = damage
+
+				if push ~= tail then
+					push.moveto = tail
+				end
+
+				bvic = true
+
+				goto push
+			end
+
+			bvic.num = nil
+		end
 	end
 
-	local push
 	if pool then
 		push = pool
 
@@ -440,20 +454,36 @@ net.Receive("ttt_combattext", function()
 		push = {0, 0, 0}
 	end
 
+	::push::
+
 	push.birth = realtime
 	push[1], push[2], push[3] = x, y, z
 	push.str = "-" .. damage
 	push.hs = net.ReadBool()
-	push.dmg = batch and damage or nil
-	push.vic = batch and victim or nil
 
-	tail = push
+	if bvic == true then
+		return
+	end
 
-	if num then
-		num.nxt = push
+	if batch then
+		if not bvic then
+			bvic = setmetatable({}, weakvals)
+			batchvics[victim] = bvic
+		end
+
+		bvic.dmg = damage
+		bvic.num = push
+
+		push.bvic = bvic
+	end
+
+	if tail then
+		tail.nxt = push
 	else
 		head = push
 	end
+
+	tail = push
 end)
 
 local vec = Vector()
@@ -475,7 +505,7 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	local r, g, b, a = combattext_r, combattext_g, combattext_b, combattext_a
 	local headshot
 
-	local num = head
+	local num, prev = head
 
 	::loop::
 
@@ -483,10 +513,36 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 
 	local nxt = num.nxt
 
-	if lifetime > max_lifetime then
-		if pool_size < 8 then
-			num.vic = nil
+	if num.moveto then
+		local dest = num.moveto
+		num.moveto = nil
 
+		num.nxt = dest.nxt
+		dest.nxt = num
+
+		if dest == tail then
+			tail = num
+		end
+
+		num = prev
+
+		if prev then
+			prev.nxt = nxt
+		else
+			head = nxt
+		end
+	elseif lifetime > max_lifetime then
+		local bvic = num.bvic
+		if bvic then
+			num.bvic = nil
+			num.moveto = nil
+
+			if num == bvic.num then
+				bvic.num = nil
+			end
+		end
+
+		if pool_size < 8 then
 			num.nxtpool = pool
 
 			pool = num
@@ -531,7 +587,7 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 		end
 	end
 
-	num = nxt
+	prev, num = num, nxt
 
 	if num then
 		goto loop
@@ -659,14 +715,16 @@ local function createsettingstab(panel, onaddform)
 		ogg = true,
 		mp3 = true,
 	}
-	local cache, cachemeta = {}, {}
-	setmetatable(cache, cachemeta)
+	local cache, audchan
 	local function GetAutoComplete(self, val)
+		if audchan ~= dingaling_IGModAudioChannel then
+			audchan = dingaling_IGModAudioChannel
+			cache = {}
+		end
+
 		if cache[val] then
 			return cache[val]
 		end
-
-		local audchan = dingaling_IGModAudioChannel
 
 		local tbl
 		local len = 0
@@ -753,16 +811,6 @@ local function createsettingstab(panel, onaddform)
 
 	local dfile = add("TextEntry", "file")
 	dfile.GetAutoComplete = GetAutoComplete
-	local OnGetFocus = dfile.OnGetFocus
-	function dfile:OnGetFocus()
-		cachemeta.__mode = nil
-		return OnGetFocus(self)
-	end
-	local OnLoseFocus = dfile.OnLoseFocus
-	function dfile:OnLoseFocus()
-		cachemeta.__mode = "v"
-		return OnLoseFocus(self)
-	end
 
 	add("NumSlider", "volume", nil, 0, 1, 2)
 
