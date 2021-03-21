@@ -486,6 +486,12 @@ net.Receive("ttt_combattext", function()
 	tail = push
 end)
 
+hook.Add("EntityRemoved", "ttt_combattext_EntityRemoved", function(ent)
+	if batchvics[ent] then
+		batchvics[ent] = nil
+	end
+end)
+
 local vec = Vector()
 
 local SetFont, SetTextPos, SetTextColor, DrawText =
@@ -524,13 +530,13 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 			tail = num
 		end
 
-		num = prev
-
-		if prev then
-			prev.nxt = nxt
-		else
+		if num == head then
 			head = nxt
+		elseif prev then
+			prev.nxt = nxt
 		end
+
+		num = prev
 	elseif lifetime > max_lifetime then
 		local bvic = num.bvic
 		if bvic then
