@@ -175,8 +175,16 @@ local maxplayers = 2 ^ maxplayers_bits
 local tracedata
 
 hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function(victim, dmginfo, took)
-	if not (IsValid(victim)
-		and (victim:IsPlayer() or took and victim:IsNPC())
+	if not (
+		IsValid(victim)
+		and (
+			victim:IsPlayer()
+			or took
+			and (
+				victim:IsNPC()
+				or victim:IsNextBot()
+			)
+		)
 	) then
 		return
 	end
