@@ -103,7 +103,7 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 
 	victim.ttt_combattext_tookdamage = victim:GetInternalVariable("m_takedamage") > 1
 
-	if victim:IsPlayer() then
+	if not victim:IsPlayer() then
 		return
 	end
 
