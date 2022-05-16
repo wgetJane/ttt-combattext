@@ -97,7 +97,13 @@ end
 net.Receive("ttt_combattext", updateplayerinfo)
 
 hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim, dmginfo)
-	if not (IsValid(victim) and victim:IsPlayer()) then
+	if not IsValid(victim) then
+		return
+	end
+
+	victim.ttt_combattext_tookdamage = victim:GetInternalVariable("m_takedamage") > 1
+
+	if victim:IsPlayer() then
 		return
 	end
 
@@ -177,6 +183,7 @@ local tracedata
 hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function(victim, dmginfo, took)
 	if not (
 		IsValid(victim)
+		and victim.ttt_combattext_tookdamage
 		and (
 			victim:IsPlayer()
 			or took
