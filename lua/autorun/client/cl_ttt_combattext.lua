@@ -118,6 +118,15 @@ for _, v in ipairs({
 	end
 },
 {
+	"unreliable", 0,
+	function(_,_, new)
+		if updateuserinfo then
+			updateuserinfo()
+		end
+	end,
+	false, false
+},
+{
 	"dingaling", 0,
 	function(_,_, new)
 		dingaling = tonumber(new) == 1
@@ -247,8 +256,11 @@ for _, v in ipairs({
 
 	local tk, cv
 
-	if v[5] then
+	if v[5] ~= nil then
 		fc = fc + FCVAR_USERINFO
+	end
+
+	if v[5] then
 		tkpfx, cv = "#ttt_combattext." .. v[4] .. ".", "ttt_" .. v[1]
 		tk = tkpfx .. "enable"
 		cvpfx = cv .. "_"
@@ -711,6 +723,8 @@ local function createsettingstab(panel, onaddform)
 
 	add("CheckBox", "antialias")
 
+	add("CheckBox", "unreliable")
+
 	panel:AddItem(f)
 	if onaddform then
 		onaddform(f)
@@ -865,6 +879,8 @@ local function createsettingstab(panel, onaddform)
 	for i = 0, 2 do
 		d:AddChoice(le("disguise_choice" .. i), i)
 	end
+
+	add("CheckBox", "npcinfl")
 
 	add("CheckBox", "lineofsight")
 

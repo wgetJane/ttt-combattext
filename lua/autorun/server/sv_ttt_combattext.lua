@@ -86,13 +86,14 @@ local function updateplayerinfo(_, ply)
 
 	local cl_cvars = ply.ttt_combattext_cvars
 	if not cl_cvars then
-		cl_cvars = {true, false, false}
+		cl_cvars = {true, false, false, false}
 		ply.ttt_combattext_cvars = cl_cvars
 	end
 
 	cl_cvars[1] = ply:GetInfoNum("ttt_combattext", 1) == 1
 	cl_cvars[2] = ply:GetInfoNum("ttt_dingaling", 0) == 1
 	cl_cvars[3] = ply:GetInfoNum("ttt_dingaling_lasthit", 0) == 1
+	cl_cvars[4] = ply:GetInfoNum("ttt_combattext_unreliable", 0) == 1
 
 	return cl_cvars
 end
@@ -333,7 +334,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 	damage = rounding == 1 and math.floor(damage + 0.5)
 		or (rounding == 2 and math.ceil or math.floor)(damage)
 
-	net.Start("ttt_combattext")
+	net.Start("ttt_combattext", cl_cvars[4])
 
 	-- dealing more than 255 damage in one hit is rare, so use only 8 bits by default
 	local bigint = damage > 255
