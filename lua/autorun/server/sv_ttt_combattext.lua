@@ -14,14 +14,13 @@ end
 local combattext_bodyarmor = 1
 local combattext_disguise = 0
 local combattext_lineofsight = true
-local combattext_rounding = 1
+local combattext_rounding = 0
 local dingaling_lasthit_allowed = true
 
 local pre
 for _, v in ipairs({
 {
 	"bodyarmor", 1,
-	FCVAR_ARCHIVE + FCVAR_NOTIFY,
 	[[TTT: Prevent damage text from revealing if the target is wearing body armor
    (1 = except against detectives and fellow traitors, 2 = no exceptions)]],
 	function(_,_, new)
@@ -31,7 +30,6 @@ for _, v in ipairs({
 },
 {
 	"disguise", 0,
-	FCVAR_ARCHIVE + FCVAR_NOTIFY,
 	[[TTT: Don't show damage text if target is disguised
    (1 = still let hitsound play, 2 = don't let hitsound play too)]],
 	function(_,_, new)
@@ -40,38 +38,35 @@ for _, v in ipairs({
 },
 {
 	"lineofsight", 1,
-	FCVAR_ARCHIVE + FCVAR_NOTIFY,
 	"Don't show damage text if the target cannot be seen",
 	function(_,_, new)
-		combattext_lineofsight = tonumber(new) == 1
+		combattext_lineofsight = tonumber(new) ~= 0
 	end
 },
 {
-	"rounding", 1,
-	FCVAR_ARCHIVE,
+	"rounding", 0,
 	[[0: round down (floor)
  - 1: round to nearest integer
  - 2: round up (ceiling)]],
 	function(_,_, new)
-		combattext_rounding = tonumber(new) or 1
+		combattext_rounding = tonumber(new) or 0
 	end
 },
 {
 	"lasthit_allowed", 1,
-	FCVAR_ARCHIVE + FCVAR_NOTIFY,
 	"Allow players to enable kill sounds",
 	function(_,_, new)
-		dingaling_lasthit_allowed = tonumber(new) == 1
+		dingaling_lasthit_allowed = tonumber(new) ~= 0
 	end,
 	"dingaling"
 },
 }) do
-	pre = v[6] or pre
+	pre = v[5] or pre
 	local k = "ttt_" .. pre .. "_" .. v[1]
 
-	v[5](k, "", CreateConVar(k, v[2], v[3], v[4]):GetString())
+	v[4](k, "", CreateConVar(k, v[2], FCVAR_ARCHIVE + FCVAR_NOTIFY, v[3]):GetString())
 
-	cvars.AddChangeCallback(k, v[5])
+	cvars.AddChangeCallback(k, v[4])
 end
 
 util.AddNetworkString("ttt_combattext")
