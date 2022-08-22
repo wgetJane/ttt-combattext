@@ -169,6 +169,14 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 		and victim:GetNWBool("disguised", false)
 end)
 
+local function IsTraitor(e)
+	if e.IsTraitorTeam then
+		return e:IsTraitorTeam()
+	elseif e.GetTraitor then
+		return e:GetTraitor()
+	end
+end
+
 -- indices from 1 up to maxplayers are reserved for players, so net messages can be optimised for players
 local maxplayers_bits = math.ceil(math.log(game.MaxPlayers()) / math.log(2))
 local maxplayers = 2 ^ maxplayers_bits
@@ -227,8 +235,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 	-- check if disguised
 	if attacker_alive
 		and data and data.disguise
-		and attacker.GetTraitor
-		and not attacker:GetTraitor()
+		and not IsTraitor(attacker)
 	then
 		if combattext_disguise == 2
 			or not (dingaling_on or lasthit_allowed)
@@ -297,9 +304,7 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 
 	if attacker_alive
 		and data and data.bodyarmor
-		and not (combattext_bodyarmor ~= 2
-			and attacker.GetTraitor
-			and attacker:GetTraitor())
+		and not (combattext_bodyarmor ~= 2 and IsTraitor(attacker))
 	then
 		damage = damage * data.bodyarmor
 	end
