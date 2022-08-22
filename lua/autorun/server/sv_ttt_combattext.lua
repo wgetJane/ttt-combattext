@@ -13,6 +13,7 @@ end
 
 local combattext_bodyarmor = 1
 local combattext_disguise = 0
+local combattext_npcinfl = true
 local combattext_lineofsight = true
 local combattext_rounding = 0
 local dingaling_lasthit_allowed = true
@@ -34,6 +35,13 @@ for _, v in ipairs({
    (1 = still let hitsound play, 2 = don't let hitsound play too)]],
 	function(_,_, new)
 		combattext_disguise = tonumber(new) or 0
+	end
+},
+{
+	"npcinfl", 1,
+	"Show damage dealt by NPCs on a player's behalf",
+	function(_,_, new)
+		combattext_npcinfl = tonumber(new) ~= 0
 	end
 },
 {
@@ -210,6 +218,17 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 	local damage = dmginfo:GetDamage()
 	if damage <= 0 then
 		return
+	end
+
+	if not combattext_npcinfl then
+		local infl = dmginfo:GetInflictor()
+
+		if infl ~= attacker
+			and IsValid(infl)
+			and (infl:IsNPC() or infl:IsNextBot())
+		then
+			return
+		end
 	end
 
 	local cl_cvars = attacker.ttt_combattext_cvars
