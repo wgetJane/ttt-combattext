@@ -257,36 +257,39 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 	end
 
 	-- check for line of sight
-	if attacker_alive
-		and combattext_lineofsight
-		and not dmginfo:IsDamageType( -- attacker obviously had line of sight for hitscan weapons
-			DMG_BULLET + DMG_CLUB + DMG_SLASH)
-	then
-		local pos = dmginfo:GetDamagePosition()
-		if pos:IsZero() then
-			pos = victim:WorldSpaceCenter()
-		end
+	if attacker_alive and combattext_lineofsight then
+		local infl = dmginfo:IsDamageType(
+				-- attacker obviously had line of sight for hitscan weapons
+				DMG_BULLET + DMG_CLUB + DMG_SLASH
+			) and dmginfo:GetInflictor()
 
-		local td = tracedata or {
-			mask = CONTENTS_SOLID + CONTENTS_MOVEABLE,
-			output = {},
-		}
-		tracedata = td
+		if not IsValid(infl) or infl ~= attacker and infl ~= attacker:GetActiveWeapon() then
+			local pos = dmginfo:GetDamagePosition()
+			if pos:IsZero() then
+				pos = victim:WorldSpaceCenter()
+			end
 
-		td.start = attacker:EyePos()
-		td.endpos = pos
-		td.filter = attacker
+			local td = tracedata or {
+				mask = CONTENTS_SOLID + CONTENTS_MOVEABLE,
+				output = {},
+			}
+			tracedata = td
 
-		if util.TraceLine(td).Hit then
-			-- perform a second trace
-			td.endpos = victim:EyePos()
+			td.start = attacker:EyePos()
+			td.endpos = pos
+			td.filter = attacker
 
 			if util.TraceLine(td).Hit then
-				if not (dingaling_on or lasthit_allowed) then
-					return
-				end
+				-- perform a second trace
+				td.endpos = victim:EyePos()
 
-				hidetext = true
+				if util.TraceLine(td).Hit then
+					if not (dingaling_on or lasthit_allowed) then
+						return
+					end
+
+					hidetext = true
+				end
 			end
 		end
 	end
