@@ -150,7 +150,12 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 			goto done
 		end
 
-		if not dmginfo:IsDamageType(DMG_BULLET + DMG_CLUB) then
+		if not (
+			dmginfo:IsDamageType(DMG_BULLET + DMG_CLUB)
+			or dmginfo:IsExplosionDamage()
+			and cv.item_armor_block_blastdmg
+			and cv.item_armor_block_blastdmg:GetBool()
+		) then
 			goto done
 		end
 
