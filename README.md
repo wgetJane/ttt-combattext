@@ -31,6 +31,8 @@ this was made for ttt, but it should still work just fine on other gamemodes
 `ttt_combattext_shadow 0` Draw damage numbers with drop shadows\
 `ttt_combattext_antialias 0` Draw damage numbers with smooth text
 
+`ttt_combattext_unreliable 0` Use unreliable net messages which are faster and might feel better for automatic weapons at high ping
+
 `ttt_dingaling 0` Play a sound whenever you damage an enemy\
 `ttt_dingaling_file "ttt_combattext/hitsound.ogg"` The sound file to play on hit\
 `ttt_dingaling_volume 0.75` Desired volume of the hit sound\
@@ -41,13 +43,14 @@ this was made for ttt, but it should still work just fine on other gamemodes
 `ttt_dingaling_lasthit_file "ttt_combattext/killsound.ogg"` The sound file to play on kill\
 `ttt_dingaling_lasthit_volume 0.75` Desired volume of the last hit sound\
 `ttt_dingaling_lasthit_pitchmaxdmg 50` Desired pitch of the last hit sound when a maximum damage hit (150 damage) is done\
-`ttt_dingaling_lasthit_pitchmindmg 100` Desired pitch of the last hit sound when a minimal damage hit (0 damage) is done\
+`ttt_dingaling_lasthit_pitchmindmg 100` Desired pitch of the last hit sound when a minimal damage hit (0 damage) is done
 
 `ttt_dingaling_IGModAudioChannel 0` Use IGModAudioChannel instead of EmitSound to play hit sounds (experimental)
 
 #### server cvars:
 `ttt_combattext_bodyarmor 1` TTT: Prevent damage text from revealing if the target is wearing body armor (1 = except against detectives and fellow traitors, 2 = no exceptions)\
 `ttt_combattext_disguise 0` TTT: Don't show damage text if target is disguised (1 = still let hitsound play, 2 = don't let hitsound play too)\
+`ttt_combattext_npcinfl 1` Show damage dealt by NPCs on a player's behalf\
 `ttt_combattext_lineofsight 1` Don't show damage text if the target cannot be seen\
-`ttt_combattext_rounding 1` 0: round down, 1: round off, 2: round up\
+`ttt_combattext_rounding 0` 0: round down, 1: round off, 2: round up\
 `ttt_dingaling_lasthit_allowed 1` Allow players to enable kill sounds
