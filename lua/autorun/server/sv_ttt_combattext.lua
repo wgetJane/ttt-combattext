@@ -100,6 +100,14 @@ end
 
 net.Receive("ttt_combattext", updateplayerinfo)
 
+local function IsDetect(e)
+	if e.IsDetectiveTeam then
+		return e:IsDetectiveTeam()
+	elseif e.GetDetective then
+		return e:GetDetective()
+	end
+end
+
 hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim, dmginfo)
 	if not IsValid(victim) then
 		return
@@ -121,59 +129,14 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 
 	data.vicpos = victim:GetPos()
 
-	data.bodyarmor = false
+	data.bodyarmor = data.bodyarmor2 or false
+	data.bodyarmor2 = false
 
-	if combattext_bodyarmor < 1 then
-	elseif TTT2 then
-		local cv = ARMOR and ARMOR.cv
-
-		if not (cv
-			and cv.armor_classic
-			and cv.armor_classic:GetBool()
-		) then
-			goto done
-		end
-
-		if combattext_bodyarmor ~= 2
-			and victim:GetBaseRole() == ROLE_DETECTIVE
-		then
-			goto done
-		end
-
-		if GetRoundState() ~= ROUND_ACTIVE then
-			goto done
-		end
-
-		local armor = victim:GetArmor()
-
-		if armor == 0 then
-			goto done
-		end
-
-		if not (
-			dmginfo:IsDamageType(DMG_BULLET + DMG_CLUB)
-			or dmginfo:IsExplosionDamage()
-			and cv.item_armor_block_blastdmg
-			and cv.item_armor_block_blastdmg:GetBool()
-		) then
-			goto done
-		end
-
-		if victim:LastHitGroup() == HITGROUP_HEAD
-			and cv.item_armor_block_headshots
-			and not cv.item_armor_block_headshots:GetBool()
-		then
-			goto done
-		end
-
-		data.bodyarmor = 1 / 0.7
-
-		::done::
-	elseif victim.HasEquipmentItem
+	if combattext_bodyarmor ~= 0
+		and not TTT2
+		and victim.HasEquipmentItem
 		and victim:HasEquipmentItem(EQUIP_ARMOR)
-		and not (combattext_bodyarmor ~= 2
-			and victim.GetDetective
-			and victim:GetDetective())
+		and not (combattext_bodyarmor ~= 2 and IsDetect(victim))
 		and dmginfo:IsBulletDamage()
 	then
 		data.bodyarmor = 1 / 0.7
@@ -190,6 +153,47 @@ hook.Add("PostGamemodeLoaded", "ttt_combattext_PostGamemodeLoaded", function()
 
 	AddCSLuaFile("terrortown/menus/gamemode/combattext.lua")
 	AddCSLuaFile("terrortown/menus/gamemode/combattext/combattext.lua")
+
+	if not (ARMOR and ARMOR.HandlePlayerTakeDamage) then
+		return
+	end
+
+	-- pretty hacky, but there's no other way since there's no hook for this and hooks are called in arbitrary order
+
+	ttt_combattext_HandlePlayerTakeDamage = ttt_combattext_HandlePlayerTakeDamage or ARMOR.HandlePlayerTakeDamage
+
+	function ARMOR:HandlePlayerTakeDamage(ply, infl, att, amount, dmginfo)
+		local scale = dmginfo:GetDamage()
+
+		ttt_combattext_HandlePlayerTakeDamage(self, ply, infl, att, amount, dmginfo)
+
+		if combattext_bodyarmor == 0 then
+			return
+		end
+
+		scale = scale / dmginfo:GetDamage()
+
+		if scale == 1 then
+			return
+		end
+
+		if combattext_bodyarmor ~= 2 and (
+			ply.GetSubRoleData and ply:GetSubRoleData().isPublicRole
+			or ply.RoleKnown and ply:RoleKnown()
+		) then
+			return
+		end
+
+		local data = ply.ttt_combattext_hitdata
+
+		if not data then
+			data = {}
+			ply.ttt_combattext_hitdata = data
+		end
+
+		data.bodyarmor = scale
+		data.bodyarmor2 = scale
+	end
 end)
 
 local function IsTraitor(e)
