@@ -901,6 +901,10 @@ local function createsettingstab(panel, onaddform)
 end
 
 hook.Add("TTTSettingsTabs", "ttt_combattext_TTTSettingsTabs", function(dtabs)
+	if TTT2 then
+		return
+	end
+
 	local dsettings = vgui.Create("DPanelList", dtabs)
 	dsettings:StretchToParent(0, 0, dtabs:GetPadding() * 2, 0)
 	dsettings:EnableVerticalScrollbar(true)

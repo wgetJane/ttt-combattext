@@ -183,6 +183,15 @@ hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim,
 		and victim:GetNWBool("disguised", false)
 end)
 
+hook.Add("PostGamemodeLoaded", "ttt_combattext_PostGamemodeLoaded", function()
+	if not TTT2 then
+		return
+	end
+
+	AddCSLuaFile("terrortown/menus/gamemode/combattext.lua")
+	AddCSLuaFile("terrortown/menus/gamemode/combattext/combattext.lua")
+end)
+
 local function IsTraitor(e)
 	if e.IsTraitorTeam then
 		return e:IsTraitorTeam()
