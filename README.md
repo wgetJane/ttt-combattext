@@ -52,5 +52,4 @@ this was made for ttt, but it should still work just fine on other gamemodes
 `ttt_combattext_disguise 0` TTT: Don't show damage text if target is disguised (1 = still let hitsound play, 2 = don't let hitsound play too)\
 `ttt_combattext_npcinfl 1` Show damage dealt by NPCs on a player's behalf\
 `ttt_combattext_lineofsight 1` Don't show damage text if the target cannot be seen\
-`ttt_combattext_rounding 0` 0: round down, 1: round off, 2: round up\
 `ttt_dingaling_lasthit_allowed 1` Allow players to enable kill sounds

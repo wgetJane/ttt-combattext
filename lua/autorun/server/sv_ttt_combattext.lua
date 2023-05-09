@@ -17,7 +17,6 @@ local combattext_bodyarmor = 1
 local combattext_disguise = 0
 local combattext_npcinfl = true
 local combattext_lineofsight = true
-local combattext_rounding = 0
 local dingaling_lasthit_allowed = true
 
 local pre
@@ -51,15 +50,6 @@ for _, v in ipairs({
 	"Don't show damage text if the target cannot be seen",
 	function(_,_, new)
 		combattext_lineofsight = tonumber(new) ~= 0
-	end
-},
-{
-	"rounding", 0,
-	[[0: round down (floor)
- - 1: round to nearest integer
- - 2: round up (ceiling)]],
-	function(_,_, new)
-		combattext_rounding = tonumber(new) or 0
 	end
 },
 {
@@ -111,10 +101,6 @@ local function IsDetect(e)
 end
 
 hook.Add("EntityTakeDamage", "ttt_combattext_EntityTakeDamage", function(victim, dmginfo)
-	if not IsValid(victim) then
-		return
-	end
-
 	victim.ttt_combattext_tookdamage = victim:GetInternalVariable("m_takedamage") > 1
 
 	if not victim:IsPlayer() then
@@ -213,9 +199,12 @@ local maxplayers = 2 ^ maxplayers_bits
 local tracedata
 
 hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function(victim, dmginfo, took)
+	local accum = victim.ttt_combattext_accumdamage or 0
+
+	victim.ttt_combattext_accumdamage = victim:GetInternalVariable("m_flDamageAccumulator")
+
 	if not (
-		IsValid(victim)
-		and victim.ttt_combattext_tookdamage
+		victim.ttt_combattext_tookdamage
 		and (
 			victim:IsPlayer()
 			or took
@@ -336,23 +325,13 @@ hook.Add("PostEntityTakeDamage", "ttt_combattext_PostEntityTakeDamage", function
 		end
 	end
 
-	-- fix rounding (so a number like 0.49999999 won't get rounded down)
-	local x10k = damage * 10000
-	if x10k % 1 ~= 0 then
-		damage = math.floor(x10k + 0.5) * (1 / 10000)
-	end
+	damage = math.floor(damage + accum)
 
-	if attacker_alive
-		and data and data.bodyarmor
+	if data and data.bodyarmor
 		and not (combattext_bodyarmor ~= 2 and IsTraitor(attacker))
 	then
 		damage = damage * data.bodyarmor
 	end
-
-	local rounding = combattext_rounding
-
-	damage = rounding == 1 and math.floor(damage + 0.5)
-		or (rounding == 2 and math.ceil or math.floor)(damage)
 
 	net.Start("ttt_combattext", cl_cvars[4])
 

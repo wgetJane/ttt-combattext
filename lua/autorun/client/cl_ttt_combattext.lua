@@ -891,12 +891,6 @@ local function createsettingstab(panel, onaddform)
 
 	add("CheckBox", "lineofsight")
 
-	d = add("ComboBox", "rounding")
-	d:SetSortItems(false)
-	d:AddChoice(le("rounding_floor"), 0)
-	d:AddChoice(le("rounding_nearest"), 1)
-	d:AddChoice(le("rounding_ceiling"), 2)
-
 	cvpfx = "dingaling"
 
 	add("CheckBox", "killsounds", "lasthit_allowed")
