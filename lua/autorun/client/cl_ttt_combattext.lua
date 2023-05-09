@@ -118,7 +118,7 @@ for _, v in ipairs({
 	end
 },
 {
-	"unreliable", 0,
+	"unreliable", 1,
 	function(_,_, new)
 		if updateuserinfo then
 			updateuserinfo()
