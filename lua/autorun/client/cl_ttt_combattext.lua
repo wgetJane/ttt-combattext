@@ -506,13 +506,16 @@ end)
 
 local vec = Vector()
 
-local SetFont, SetTextPos, SetTextColor, DrawText =
-	surface.SetFont, surface.SetTextPos, surface.SetTextColor, surface.DrawText
+local GetViewSetup, SetFont, SetTextPos, SetTextColor, DrawText =
+	render.GetViewSetup, surface.SetFont, surface.SetTextPos, surface.SetTextColor, surface.DrawText
 
 hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 	if not (head and combattext) then
 		return
 	end
+
+	local view = GetViewSetup(true)
+	view.type = "3D"
 
 	local realtime = RealTime()
 	local max_lifetime = 1.5
@@ -585,7 +588,11 @@ hook.Add("HUDPaint", "ttt_combattext_HUDPaint", function()
 		vec[1], vec[2], vec[3] =
 			num[1], num[2], num[3] + lifeperc * float_height
 
+		cam.Start(view)
+
 		local pos = vec:ToScreen()
+
+		cam.End3D()
 
 		if pos.visible then
 			if num.hs ~= headshot then
