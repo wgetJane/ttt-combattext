@@ -1,3 +1,5 @@
+resource.AddWorkshop("2791060001")
+
 resource.AddSingleFile("sound/ttt_combattext/hitsound.ogg")
 resource.AddSingleFile("sound/ttt_combattext/killsound.ogg")
 
