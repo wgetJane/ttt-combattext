@@ -498,6 +498,43 @@ net.Receive("ttt_combattext", function()
 	tail = push
 end)
 
+hook.Add("Initialize", "ttt_combattext_Initialize", function()
+	if not TTT2 then return end
+
+	-- least intelligent human moment inbound
+	local buf = file.Read("resource/localization/en/ttt_combattext.properties", "GAME")
+	local lines = string.Explode("\n", buf)
+
+	local multi = false
+	for k = 1, #lines do
+		local line = lines[k]
+
+		if string.match(line, "^#") or line == "" or string.byte(line) == 0 then continue end
+		if string.match(line, "\\n\\$") then
+			if multi then
+				lines[k] = lines[k - 1] .. line
+				k = k - 1
+			end
+			multi = true
+			continue
+		end
+
+		if multi then
+			line = lines[k - 1] .. line
+			multi = false
+		end
+
+		local parts = string.Split(line, "=")
+		local key = table.remove(parts, 1)
+		local rest = string.Implode("=", parts)
+		rest = string.Implode("\n", string.Split(rest, "\\n\\"))
+		if key and rest then
+			LANG.AddToLanguage("en", key, rest)
+		end
+	end
+end)
+
+
 hook.Add("EntityRemoved", "ttt_combattext_EntityRemoved", function(ent)
 	if batchvics[ent] then
 		batchvics[ent] = nil

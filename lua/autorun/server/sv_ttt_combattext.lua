@@ -139,8 +139,7 @@ hook.Add("PostGamemodeLoaded", "ttt_combattext_PostGamemodeLoaded", function()
 		return
 	end
 
-	AddCSLuaFile("terrortown/menus/gamemode/combattext.lua")
-	AddCSLuaFile("terrortown/menus/gamemode/combattext/combattext.lua")
+	AddCSLuaFile("terrortown/menus/gamemode/appearance/combattext.lua")
 
 	if not (ARMOR and ARMOR.HandlePlayerTakeDamage) then
 		return
